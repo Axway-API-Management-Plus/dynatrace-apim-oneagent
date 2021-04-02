@@ -14,6 +14,11 @@ repositories {
     mavenCentral()
 }
 
+ext{
+    apimLibPath = '/home/rathna/Axway-7.6.2/apigateway/system/lib'
+}
+
+
 dependencies {
     // compile fileTree(dir: '/Users/rnatarajan/AxwayProducts/apim_7_7/lib', include: '*.jar')
     // compile fileTree(dir: '/Users/rnatarajan/AxwayProducts/apim_7_7/lib/modules', include: '*.jar')
@@ -21,13 +26,13 @@ dependencies {
     implementation group: 'org.aspectj', name: 'aspectjweaver', version: '1.9.6'
     implementation group: 'com.dynatrace.oneagent.sdk.java', name: 'oneagent-sdk', version: '1.8.0'
 
-    implementation files('/home/rathna/Axway-7.6.2/apigateway/system/lib/com.vordel.circuit.net.jar',
-                         '/home/rathna/Axway-7.6.2/apigateway/system/lib/plugins/apigw-common-7.6.2.5-3.jar',
-                    '/home/rathna/Axway-7.6.2/apigateway/system/lib/server.jar',
-                    '/home/rathna/Axway-7.6.2/apigateway/system/lib/circuit.jar',
-                    '/home/rathna/Axway-7.6.2/apigateway/system/lib/plugins/vordel-mime-7.6.2.5-3.jar',
-                    '/home/rathna/Axway-7.6.2/apigateway/system/lib/plugins/vordel-trace-7.6.2.5-3.jar',
-                   '/home/rathna/Axway-7.6.2/apigateway/system/lib/plugins/vordel-circuit-7.6.2.5-3.jar' )
+    implementation files("${apimLibPath}/com.vordel.circuit.net.jar",
+                         "${apimLibPath}/plugins/apigw-common-7.6.2.5-3.jar",
+                         "${apimLibPath}/server.jar",
+                         "${apimLibPath}/circuit.jar",
+                         "${apimLibPath}/plugins/vordel-mime-7.6.2.5-3.jar",
+                         "${apimLibPath}/plugins/vordel-trace-7.6.2.5-3.jar",
+                         "${apimLibPath}/plugins/vordel-circuit-7.6.2.5-3.jar" )
 
 }
 
