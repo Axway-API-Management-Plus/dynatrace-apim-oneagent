@@ -20,7 +20,7 @@ public class AxwayAspect {
     private boolean isAPIManager;
 
     public AxwayAspect() {
-        isAPIManager = Boolean.valueOf(System.getProperty("apimanager", "true"));
+        isAPIManager = Boolean.parseBoolean(System.getProperty("apimanager", "true"));
     }
 
     @Pointcut("call (* com.vordel.circuit.net.State.tryTransaction()) && target(t)")
@@ -42,15 +42,12 @@ public class AxwayAspect {
     public void invokeDisposeAroundAdvice(ProceedingJoinPoint pjp, HTTPProtocol protocol, HTTPProtocol handler,
                                           ServerTransaction txn, CorrelationID id, Map<String, Object> loopbackMessage) throws Throwable {
         if (!isAPIManager) {
-
             String[] uriSplit = txn.getRequestURI().split("/");
             String apiName = uriSplit[1];
             String apiContextRoot = "/";
             String orgName = "defaultFrontend";
             String appName = "defaultFrontend";
-
             OneAgentSDKUtils.aroundConsumer(pjp, null, apiName, apiContextRoot, appName, orgName, txn);
-
         } else {
             pjp.proceed();
         }

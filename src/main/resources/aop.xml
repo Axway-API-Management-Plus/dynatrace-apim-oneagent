@@ -2,7 +2,7 @@
 
 	<aspects>
 		<!-- declare one aspects to the weaver -->
-		<aspect name="com.axway.aspects.apim.AxwayAspectOld" />
+		<aspect name="com.axway.aspects.apim.AxwayAspect" />
 		<!--<include within="com.compuware.fts.*" />-->
 
 	</aspects>

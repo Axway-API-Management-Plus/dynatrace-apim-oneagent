@@ -8,18 +8,14 @@ import com.dynatrace.oneagent.sdk.api.enums.SDKState;
 import com.dynatrace.oneagent.sdk.api.infos.WebApplicationInfo;
 import com.vordel.circuit.Message;
 import com.vordel.circuit.net.State;
-import com.vordel.dwe.CorrelationID;
-import com.vordel.dwe.http.HTTPProtocol;
 import com.vordel.dwe.http.ServerTransaction;
 import com.vordel.mime.HeaderSet;
 import com.vordel.mime.HeaderSet.HeaderEntry;
 import com.vordel.trace.Trace;
 import org.aspectj.lang.ProceedingJoinPoint;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Map.Entry;
 
 public class OneAgentSDKUtils {
@@ -150,7 +146,7 @@ public class OneAgentSDKUtils {
             tracer.setStatusCode(getHTTPStatusCode(m));
             tracer.end();
         } else {
-            IncomingWebRequestTracer tracer =  createIncomingWebRequestTracer(m, txn, wsInfo);
+            IncomingWebRequestTracer tracer = createIncomingWebRequestTracer(m, txn, wsInfo);
             tracer.start();
             addIncomingHeaders(tracer, headers);
             addRequestAttributes(appName, orgName);
@@ -175,12 +171,12 @@ public class OneAgentSDKUtils {
             tracer = oneAgentSdk.traceIncomingWebRequest(wsInfo, httpURL, m.get("http.request.verb").toString());
         } else if (txn != null) {
             String httpURL = "https://" + txn.getHost() + txn.getRequestURI();
-            tracer = oneAgentSdk.traceIncomingWebRequest(wsInfo, httpURL, txn.getVerb());
+            tracer = oneAgentSdk.traceIncomingWebRequest(wsInfo, httpURL, txn.getMethod());
         }
         return tracer;
     }
 
-    public static void getAttributes(Message message) throws IOException {
+    public static void getAttributes(Message message) {
         HeaderSet httpHeaders = (HeaderSet) message.get("http.headers");
         if (httpHeaders == null)
             return;
@@ -226,8 +222,7 @@ public class OneAgentSDKUtils {
     public static String getRequestURL(Message message) {
 
         try {
-            String url = message.get("http.request.uri").toString();
-            return url;
+            return message.get("http.request.uri").toString();
         } catch (Exception ex) {
             Trace.error("in Request url ", ex);
             return "(null)";
