@@ -161,13 +161,24 @@ public class OneAgentSDKUtils {
         IncomingWebRequestTracer tracer = null;
 
         if (m != null) {
-            String httpURL = "https://" + m.get("http.request.hostname").toString() + m.get("http.request.uri").toString();
+            String httpURL = "https://" + readHostNameFromHttpHeader(m) + m.get("http.request.uri").toString();
             tracer = oneAgentSdk.traceIncomingWebRequest(wsInfo, httpURL, m.get("http.request.verb").toString());
         } else if (txn != null) {
             String httpURL = "https://" + txn.getHost() + txn.getRequestURI();
             tracer = oneAgentSdk.traceIncomingWebRequest(wsInfo, httpURL, txn.getMethod());
         }
         return tracer;
+    }
+
+    public static String readHostNameFromHttpHeader(Message message){
+        HeaderSet httpHeaders = (HeaderSet) message.get("http.headers");
+        if (httpHeaders == null)
+            return "0.0.0.0";
+        String host = (String) httpHeaders.get("Host");
+        if(host.contains(":")){
+            return host.split(":")[0];
+        }
+        return host;
     }
 
     public static void getAttributes(Message message) {
