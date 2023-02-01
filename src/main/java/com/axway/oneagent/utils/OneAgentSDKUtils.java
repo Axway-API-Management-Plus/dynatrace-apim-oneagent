@@ -1,5 +1,6 @@
 package com.axway.oneagent.utils;
 
+import com.axway.aspects.apim.TraceLoggingCallback;
 import com.dynatrace.oneagent.sdk.OneAgentSDKFactory;
 import com.dynatrace.oneagent.sdk.api.IncomingWebRequestTracer;
 import com.dynatrace.oneagent.sdk.api.OneAgentSDK;
@@ -20,8 +21,8 @@ import java.util.Map.Entry;
 
 public class OneAgentSDKUtils {
     static OneAgentSDK oneAgentSdk = OneAgentSDKFactory.createInstance();
-
     static {
+        oneAgentSdk.setLoggingCallback(new TraceLoggingCallback());
         if (oneAgentSdk.getCurrentState() == null) {
 
             System.out.println("SDK is active and capturing.");
@@ -34,19 +35,12 @@ public class OneAgentSDKUtils {
     }
 
     public static void aroundProducer(ProceedingJoinPoint pjp, State state) {
-        String host = "host";
-        String port = "port";
+
         String orgName = "";
         String appName = "";
         Message message = null;
         HeaderSet headers = null;
         try {
-            Field hostField = State.class.getDeclaredField("host");
-            hostField.setAccessible(true);
-            host = (String) hostField.get(state);
-            Field portField = State.class.getDeclaredField("port");
-            portField.setAccessible(true);
-            port = (String) portField.get(state);
             Field headersField = State.class.getDeclaredField("headers");
             headersField.setAccessible(true);
             headers = (HeaderSet) headersField.get(state);
@@ -202,9 +196,6 @@ public class OneAgentSDKUtils {
         oneAgentSdk.addCustomRequestAttribute("Neoload_Traffic", value);
     }
 
-    public static String getRequestPath(Message message) {
-        return (String) message.get("http.request.path");
-    }
 
     public static void getClientName(String clientName) {
         oneAgentSdk.addCustomRequestAttribute("ClientName", clientName);
