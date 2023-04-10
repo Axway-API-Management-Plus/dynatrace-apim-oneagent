@@ -26,11 +26,17 @@ gradlew clean jar
 - Copy Aspectj weaver - https://repo1.maven.org/maven2/org/aspectj/aspectjweaver/1.9.6/aspectjweaver-1.9.6.jar to  apigateway/ext/lib
 - Restart API Gateway instances
 - Create a file named jvm.xml under APIGATEWAY_INSTALL_DIR/apigateway/conf/
-
+## API Gateway without API Manager
 ```xml
 <ConfigurationFragment>
     <VMArg name="-javaagent:/home/axway/Axway-7.7.0-Aug2021/apigateway/ext/lib/aspectjweaver-1.9.6.jar"/>
     <SystemProperty name="apimanager" value="false" />
+</ConfigurationFragment>
+```
+## API Gateway and API Manager
+```xml
+<ConfigurationFragment>
+    <VMArg name="-javaagent:/home/axway/Axway-7.7.0-Aug2021/apigateway/ext/lib/aspectjweaver-1.9.6.jar"/>
 </ConfigurationFragment>
 ```
 
