@@ -54,14 +54,14 @@ public class AxwayAspect {
     }
 
 
-    @Pointcut("call(* com.vordel.coreapireg.runtime.broker.InvokableMethod.invoke(..)) && args (txn, m, lastChance, path)")
-    public void invokeDisposePointcut(ServerTransaction txn, Message m, MessageProcessor lastChance, String path) {
+    @Pointcut("call(* com.vordel.coreapireg.runtime.broker.InvokableMethod.invoke(..)) && args (txn, m, lastChance)")
+    public void invokeDisposePointcut(ServerTransaction txn, Message m, MessageProcessor lastChance) {
 
     }
 
-    @Around("invokeDisposePointcut(txn, m, lastChance, path)")
+    @Around("invokeDisposePointcut(txn, m, lastChance)")
     public Object invokeAroundAdvice(ProceedingJoinPoint pjp, ServerTransaction txn, Message m,
-                                     MessageProcessor lastChance, String path) {
+                                     MessageProcessor lastChance) {
 
         String[] uriSplit = OneAgentSDKUtils.getRequestURL(m).split("/");
         String apiName;

@@ -175,6 +175,8 @@ public class OneAgentSDKUtils {
         if (httpHeaders == null)
             return "0.0.0.0";
         String host = (String) httpHeaders.get("Host");
+        if(host == null)
+            return "0.0.0.0";
         if(host.contains(":")){
             return host.split(":")[0];
         }
