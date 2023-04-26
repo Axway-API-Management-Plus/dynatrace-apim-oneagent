@@ -18,6 +18,7 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import java.lang.reflect.Field;
 import java.util.Iterator;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 public class OneAgentSDKUtils {
     static OneAgentSDK oneAgentSdk = OneAgentSDKFactory.createInstance();
@@ -35,7 +36,7 @@ public class OneAgentSDKUtils {
     }
 
     public static void aroundProducer(ProceedingJoinPoint pjp, State state) {
-
+        Trace.debug("Dynatrace :: Starting around producer");
         String orgName = "";
         String appName = "";
         Message message = null;
@@ -44,9 +45,17 @@ public class OneAgentSDKUtils {
             Field headersField = State.class.getDeclaredField("headers");
             headersField.setAccessible(true);
             headers = (HeaderSet) headersField.get(state);
+            Trace.debug("Dynatrace :: Producer Headers before proceed: " + headers.toString());
             Field messageField = State.class.getDeclaredField("message");
             messageField.setAccessible(true);
             message = (Message) messageField.get(state);
+
+            final Message finalMessage = message;
+            String mapAsString = message.keySet().stream()
+                    .map(key -> key + "=" + finalMessage.get(key))
+                    .collect(Collectors.joining(", ", "{", "}"));
+
+            Trace.debug("Dynatrace :: message keys: " + mapAsString);
 
             if (message.get("authentication.application.name") != null) {
                 appName = message.get("authentication.application.name").toString();
@@ -59,29 +68,45 @@ public class OneAgentSDKUtils {
         }
         OutgoingWebRequestTracer outgoingWebRequestTracer = oneAgentSdk.traceOutgoingWebRequest(getRequestURL(message), getHTTPMethod(message));
         try {
+            Trace.debug("Dynatrace :: Add outgoing headers");
             addoutgoingHeaders(outgoingWebRequestTracer, headers);
+            Trace.debug("Dynatrace :: Start Outgoing Tracer");
+            outgoingWebRequestTracer.start();
+            Trace.debug("Dynatrace :: Add Request Attributes");
+            addRequestAttributes(appName, orgName);
             String outgoingTag = outgoingWebRequestTracer.getDynatraceStringTag();
             Trace.info("Dynatrace :: outgoing x-dynatrace header " + outgoingTag);
+            Trace.debug("Dynatrace :: Set outgoing header");
             headers.setHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME, outgoingTag);
-            for (Entry<String, HeaderEntry> entry : headers.entrySet()) {
-                outgoingWebRequestTracer.addRequestHeader(entry.getKey(), entry.getValue().toString());
-            }
-            outgoingWebRequestTracer.start();
-            addRequestAttributes(appName, orgName);
+            //for (Entry<String, HeaderEntry> entry : headers.entrySet()) {
+            //    outgoingWebRequestTracer.addRequestHeader(entry.getKey(), entry.getValue().toString());
+            //}
             if (message != null) {
+                Trace.debug("Dynatrace :: Get Message Attributes");
                 getAttributes(message);
             }
             pjp.proceed();
+
+            final Message finalMessage1 = message;
+            String postMapAsString = message.keySet().stream()
+                    .map(key -> key + "=" + finalMessage1.get(key))
+                    .collect(Collectors.joining(", ", "{", "}"));
+            Trace.debug("Dynatrace :: message headers after process " + postMapAsString);
         } catch (Throwable e) {
             Trace.error("Dynatrace :: around producer ", e);
             outgoingWebRequestTracer.error(e);
         }
-        outgoingWebRequestTracer.setStatusCode(getHTTPStatusCode(message));
-        outgoingWebRequestTracer.end();
+        finally {
+            outgoingWebRequestTracer.setStatusCode(getHTTPStatusCode(message));
+            outgoingWebRequestTracer.end();
+        }
+        Trace.debug("Dynatrace :: Ending around producer");
+
     }
 
     public static Object aroundConsumer(ProceedingJoinPoint pjp, Message m, String apiName, String apiContextRoot, String appName, String orgName,
                                         ServerTransaction txn) {
+        Trace.debug("Dynatrace :: Starting around consumer");
 
         Object pjpProceed = null;
         WebApplicationInfo wsInfo = oneAgentSdk.createWebApplicationInfo("serverNameTest", apiName, apiContextRoot);
@@ -99,13 +124,13 @@ public class OneAgentSDKUtils {
             IncomingWebRequestTracer tracer = createIncomingWebRequestTracer(m, txn, wsInfo);
             if (receivedTag.startsWith("FW")) {
                 tracer.setDynatraceStringTag(receivedTag);
-                tracer.start();
                 addIncomingHeaders(tracer, headers);
+                tracer.start();
                 addRequestAttributes(appName, orgName);
             } else {
                 tracer.setDynatraceStringTag(receivedTag);
-                tracer.start();
                 addIncomingHeaders(tracer, headers);
+                tracer.start();
                 addRequestAttributes(appName, orgName);
                 int NA_index = receivedTag.indexOf("NA=");
                 int SN_index = receivedTag.indexOf("SN=");
@@ -141,8 +166,8 @@ public class OneAgentSDKUtils {
             tracer.end();
         } else {
             IncomingWebRequestTracer tracer = createIncomingWebRequestTracer(m, txn, wsInfo);
-            tracer.start();
             addIncomingHeaders(tracer, headers);
+            tracer.start();
             addRequestAttributes(appName, orgName);
             try {
                 pjpProceed = pjp.proceed();
@@ -153,6 +178,7 @@ public class OneAgentSDKUtils {
             tracer.setStatusCode(getHTTPStatusCode(m));
             tracer.end();
         }
+        Trace.debug("Dynatrace :: Ending around consumer");
 
         return pjpProceed;
     }
