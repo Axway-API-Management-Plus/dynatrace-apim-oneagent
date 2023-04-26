@@ -332,7 +332,10 @@ public class OneAgentSDKUtils {
     }
 
     public static void addRequestAttributes(Map<String, String> attributes) {
-        attributes.forEach((key, value) -> oneAgentSdk.addCustomRequestAttribute(key, value));
+        attributes.forEach((key, value) -> {
+            Trace.info("Dynatrace :: " + key + " " + value);
+            oneAgentSdk.addCustomRequestAttribute(key, value);
+        });
     }
 
 }
