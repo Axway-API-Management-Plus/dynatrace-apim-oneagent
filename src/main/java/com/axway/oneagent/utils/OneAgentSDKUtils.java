@@ -114,8 +114,17 @@ public class OneAgentSDKUtils {
         WebApplicationInfo wsInfo = oneAgentSdk.createWebApplicationInfo("Axway Gateway", apiName, apiContextRoot);
 
         HeaderSet headers = null;
+        String correlationId = null;
+
         if (m != null) {
             headers = (HeaderSet) m.get("http.headers");
+            Object[] legZero = (Object[]) m.get("leg0");
+            if (legZero.length > 1) {
+                Object[] information = (Object[]) legZero[1];
+                if (information.length > 3){
+                    correlationId = information[3].toString();
+                }
+            }
         } else if (txn != null) {
             headers = txn.getHeaders();
         }
@@ -128,13 +137,32 @@ public class OneAgentSDKUtils {
 
         IncomingWebRequestTracer tracer = createIncomingWebRequestTracer(m, txn, wsInfo);
         addIncomingHeaders(tracer, headers);
+        Map<String, String> map;
+        map = new HashMap<>();
+        if (appName != null) {
+            map.put("AxwayAppName", appName);
+        }
+
+        if (orgName != null) {
+            map.put("AxwayOrgName", orgName);
+        }
+
+        if (appId != null) {
+            map.put("AxwayAppId", appId);
+        }
+
+        if (correlationId != null) {
+            map.put("AxwayCorrelationId", "Id-" + correlationId);
+        }
+
+
 
         if (headers != null && headers.hasHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME)) {
             String receivedTag = headers.getHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME);
             Trace.info("Dynatrace :: X-Dynatrace-Header " + receivedTag);
             tracer.setDynatraceStringTag(receivedTag);
             tracer.start();
-            addRequestAttributes(appName, orgName, appId);
+            addRequestAttributes(map);
 
             if (!receivedTag.startsWith("FW")) {
                 int NA_index = receivedTag.indexOf("NA=");
@@ -168,7 +196,7 @@ public class OneAgentSDKUtils {
             Trace.debug("Dynatrace :: aroundConsumer : after processing request");
         } else {
             tracer.start();
-            addRequestAttributes(appName, orgName, appId);
+            addRequestAttributes(map);
             try {
                 pjpProceed = pjp.proceed();
             } catch (Throwable e) {
@@ -176,9 +204,7 @@ public class OneAgentSDKUtils {
                 tracer.error(e);
             }
         }
-        if (pjpProceed != null) {
-            Trace.debug(pjpProceed.toString());
-        }
+
         tracer.setStatusCode(getHTTPStatusCode(m));
         tracer.end();
         Trace.debug("Dynatrace :: Ending around consumer");
