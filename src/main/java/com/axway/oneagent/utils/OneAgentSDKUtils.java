@@ -111,7 +111,7 @@ public class OneAgentSDKUtils {
         Trace.debug("Dynatrace :: Starting around consumer");
 
         Object pjpProceed = null;
-        WebApplicationInfo wsInfo = oneAgentSdk.createWebApplicationInfo("serverNameTest", apiName, apiContextRoot);
+        WebApplicationInfo wsInfo = oneAgentSdk.createWebApplicationInfo("Axway Gateway", apiName, apiContextRoot);
 
         HeaderSet headers = null;
         if (m != null) {
@@ -119,6 +119,13 @@ public class OneAgentSDKUtils {
         } else if (txn != null) {
             headers = txn.getHeaders();
         }
+        if (headers == null) {
+            Trace.debug("Dynatrace :: NO Consumer Headers");
+        }
+        else {
+            Trace.debug("Dynatrace :: Consumer Headers before proceed: " + headers.toString());
+        }
+
         IncomingWebRequestTracer tracer = createIncomingWebRequestTracer(m, txn, wsInfo);
         addIncomingHeaders(tracer, headers);
 
@@ -158,7 +165,6 @@ public class OneAgentSDKUtils {
                 Trace.error("around consumer: if block ", e);
                 tracer.error(e);
             }
-
             Trace.debug("Dynatrace :: aroundConsumer : after processing request");
         } else {
             tracer.start();
@@ -169,6 +175,9 @@ public class OneAgentSDKUtils {
                 Trace.error("Dynatrace :: around consumer in else ", e);
                 tracer.error(e);
             }
+        }
+        if (pjpProceed != null) {
+            Trace.debug(pjpProceed.toString());
         }
         tracer.setStatusCode(getHTTPStatusCode(m));
         tracer.end();
@@ -288,8 +297,14 @@ public class OneAgentSDKUtils {
     public static void addRequestAttributes(String appName, String orgName, String appId) {
         Map<String, String> map;
         map = new HashMap<>();
-        map.put("AxwayAppName", appName);
-        map.put("AxwayOrgName", orgName);
+        if (appName != null) {
+            map.put("AxwayAppName", appName);
+        }
+
+        if (orgName != null) {
+            map.put("AxwayOrgName", orgName);
+        }
+
         if (appId != null) {
             map.put("AxwayAppId", appId);
         }
