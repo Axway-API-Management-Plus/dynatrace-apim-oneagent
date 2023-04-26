@@ -60,8 +60,6 @@ public class OneAgentSDKUtils {
         OutgoingWebRequestTracer outgoingWebRequestTracer = oneAgentSdk.traceOutgoingWebRequest(getRequestURL(message), getHTTPMethod(message));
         try {
             addoutgoingHeaders(outgoingWebRequestTracer, headers);
-            outgoingWebRequestTracer.start();
-            addRequestAttributes(appName, orgName);
             String outgoingTag = outgoingWebRequestTracer.getDynatraceStringTag();
             Trace.info("Dynatrace :: outgoing x-dynatrace header " + outgoingTag);
             headers.setHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME, outgoingTag);
@@ -71,6 +69,8 @@ public class OneAgentSDKUtils {
             if (message != null) {
                 getAttributes(message);
             }
+            outgoingWebRequestTracer.start();
+            addRequestAttributes(appName, orgName);
             pjp.proceed();
         } catch (Throwable e) {
             Trace.error("Dynatrace :: around producer ", e);
