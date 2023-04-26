@@ -15,6 +15,7 @@ import com.vordel.trace.Trace;
 import org.aspectj.lang.ProceedingJoinPoint;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -119,7 +120,10 @@ public class OneAgentSDKUtils {
         if (m != null) {
             headers = (HeaderSet) m.get("http.headers");
             if (m.containsKey("leg0")) {
+                Trace.debug("Dynatrace :: Leg0 " + m.get("leg0").getClass());
                 Object[] legZero = (Object[]) m.get("leg0");
+
+                Trace.debug("Dynatrace :: Getting Leg0 data" + Arrays.toString(legZero));
                 if (legZero.length > 1) {
                     Object[] information = (Object[]) legZero[1];
                     if (information.length > 3) {
