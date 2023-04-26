@@ -11,13 +11,13 @@ import com.vordel.circuit.Message;
 import com.vordel.circuit.net.State;
 import com.vordel.dwe.http.ServerTransaction;
 import com.vordel.mime.HeaderSet;
-import com.vordel.mime.HeaderSet.HeaderEntry;
 import com.vordel.trace.Trace;
 import org.aspectj.lang.ProceedingJoinPoint;
 
 import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map.Entry;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class OneAgentSDKUtils {
@@ -39,6 +39,7 @@ public class OneAgentSDKUtils {
         Trace.debug("Dynatrace :: Starting around producer");
         String orgName = "";
         String appName = "";
+        String appId = "";
         Message message = null;
         HeaderSet headers = null;
         try {
@@ -66,21 +67,22 @@ public class OneAgentSDKUtils {
         } catch (Exception e) {
             Trace.error("around producer ", e);
         }
-        OutgoingWebRequestTracer outgoingWebRequestTracer = oneAgentSdk.traceOutgoingWebRequest(getRequestURL(message), getHTTPMethod(message));
+        OutgoingWebRequestTracer outgoingWebRequestTracer = oneAgentSdk.traceOutgoingWebRequest(getRequestURL(message),
+                getHTTPMethod(message));
+
         try {
             Trace.debug("Dynatrace :: Add outgoing headers");
-            addoutgoingHeaders(outgoingWebRequestTracer, headers);
+            addOutgoingHeaders(outgoingWebRequestTracer, headers);
             Trace.debug("Dynatrace :: Start Outgoing Tracer");
             outgoingWebRequestTracer.start();
             Trace.debug("Dynatrace :: Add Request Attributes");
-            addRequestAttributes(appName, orgName);
+            addRequestAttributes(appName, orgName, appId);
             String outgoingTag = outgoingWebRequestTracer.getDynatraceStringTag();
             Trace.info("Dynatrace :: outgoing x-dynatrace header " + outgoingTag);
             Trace.debug("Dynatrace :: Set outgoing header");
+
             headers.setHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME, outgoingTag);
-            //for (Entry<String, HeaderEntry> entry : headers.entrySet()) {
-            //    outgoingWebRequestTracer.addRequestHeader(entry.getKey(), entry.getValue().toString());
-            //}
+
             if (message != null) {
                 Trace.debug("Dynatrace :: Get Message Attributes");
                 getAttributes(message);
@@ -91,7 +93,7 @@ public class OneAgentSDKUtils {
             String postMapAsString = message.keySet().stream()
                     .map(key -> key + "=" + finalMessage1.get(key))
                     .collect(Collectors.joining(", ", "{", "}"));
-            Trace.debug("Dynatrace :: message headers after process " + postMapAsString);
+            Trace.debug("Dynatrace :: message keys after process " + postMapAsString);
         } catch (Throwable e) {
             Trace.error("Dynatrace :: around producer ", e);
             outgoingWebRequestTracer.error(e);
@@ -105,7 +107,7 @@ public class OneAgentSDKUtils {
     }
 
     public static Object aroundConsumer(ProceedingJoinPoint pjp, Message m, String apiName, String apiContextRoot, String appName, String orgName,
-                                        ServerTransaction txn) {
+                                        String appId, ServerTransaction txn) {
         Trace.debug("Dynatrace :: Starting around consumer");
 
         Object pjpProceed = null;
@@ -117,21 +119,17 @@ public class OneAgentSDKUtils {
         } else if (txn != null) {
             headers = txn.getHeaders();
         }
+        IncomingWebRequestTracer tracer = createIncomingWebRequestTracer(m, txn, wsInfo);
+        addIncomingHeaders(tracer, headers);
 
-        if (headers.hasHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME)) {
+        if (headers != null && headers.hasHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME)) {
             String receivedTag = headers.getHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME);
             Trace.info("Dynatrace :: X-Dynatrace-Header " + receivedTag);
-            IncomingWebRequestTracer tracer = createIncomingWebRequestTracer(m, txn, wsInfo);
-            if (receivedTag.startsWith("FW")) {
-                tracer.setDynatraceStringTag(receivedTag);
-                addIncomingHeaders(tracer, headers);
-                tracer.start();
-                addRequestAttributes(appName, orgName);
-            } else {
-                tracer.setDynatraceStringTag(receivedTag);
-                addIncomingHeaders(tracer, headers);
-                tracer.start();
-                addRequestAttributes(appName, orgName);
+            tracer.setDynatraceStringTag(receivedTag);
+            tracer.start();
+            addRequestAttributes(appName, orgName, appId);
+
+            if (!receivedTag.startsWith("FW")) {
                 int NA_index = receivedTag.indexOf("NA=");
                 int SN_index = receivedTag.indexOf("SN=");
                 int SI_index = receivedTag.indexOf("SI=");
@@ -162,22 +160,18 @@ public class OneAgentSDKUtils {
             }
 
             Trace.debug("Dynatrace :: aroundConsumer : after processing request");
-            tracer.setStatusCode(getHTTPStatusCode(m));
-            tracer.end();
         } else {
-            IncomingWebRequestTracer tracer = createIncomingWebRequestTracer(m, txn, wsInfo);
-            addIncomingHeaders(tracer, headers);
             tracer.start();
-            addRequestAttributes(appName, orgName);
+            addRequestAttributes(appName, orgName, appId);
             try {
                 pjpProceed = pjp.proceed();
             } catch (Throwable e) {
                 Trace.error("Dynatrace :: around consumer in else ", e);
                 tracer.error(e);
             }
-            tracer.setStatusCode(getHTTPStatusCode(m));
-            tracer.end();
         }
+        tracer.setStatusCode(getHTTPStatusCode(m));
+        tracer.end();
         Trace.debug("Dynatrace :: Ending around consumer");
 
         return pjpProceed;
@@ -268,24 +262,42 @@ public class OneAgentSDKUtils {
     }
 
     public static void addIncomingHeaders(IncomingWebRequestTracer tracer, HeaderSet headers) {
-        Iterator<String> iterator = headers.getNames();
-        if (iterator.hasNext()) {
-            String header = iterator.next();
-            tracer.addRequestHeader(header, headers.getHeader(header));
+        if (headers != null) {
+            Iterator<String> iterator = headers.getNames();
+            if (iterator.hasNext()) {
+                String header = iterator.next();
+                tracer.addRequestHeader(header, headers.getHeader(header));
+            }
         }
     }
 
-    public static void addoutgoingHeaders(OutgoingWebRequestTracer tracer, HeaderSet headers) {
-        Iterator<String> iterator = headers.getNames();
-        if (iterator.hasNext()) {
-            String header = iterator.next();
-            tracer.addRequestHeader(header, headers.getHeader(header));
+    public static void addOutgoingHeaders(OutgoingWebRequestTracer tracer, HeaderSet headers) {
+        if (headers != null) {
+            Iterator<String> iterator = headers.getNames();
+            if (iterator.hasNext()) {
+                String header = iterator.next();
+                tracer.addRequestHeader(header, headers.getHeader(header));
+            }
         }
     }
 
     public static void addRequestAttributes(String appName, String orgName) {
-        oneAgentSdk.addCustomRequestAttribute("AxwayAppName", appName);
-        oneAgentSdk.addCustomRequestAttribute("AxwayOrgName", orgName);
+        addRequestAttributes(appName, orgName, null);
+    }
+
+    public static void addRequestAttributes(String appName, String orgName, String appId) {
+        Map<String, String> map;
+        map = new HashMap<>();
+        map.put("AxwayAppName", appName);
+        map.put("AxwayOrgName", orgName);
+        if (appId != null) {
+            map.put("AxwayAppId", appId);
+        }
+        addRequestAttributes(map);
+    }
+
+    public static void addRequestAttributes(Map<String, String> attributes) {
+        attributes.forEach((key, value) -> oneAgentSdk.addCustomRequestAttribute(key, value));
     }
 
 }
