@@ -45,6 +45,7 @@ gradlew clean jar
 - Create Request Attributes in Dynatrace.
     - AxwayAppId
     - AxwayAppName
+    - AxwayCorrelationId
     - AxwayOrgName
      
      Go to Settings > Server-side service monitoring > Request Attributes > Define a new request attribute.  Create a Request Attribute for each property with a datasource configured to use an "SDK custom attribute" as in the following screenshot.
