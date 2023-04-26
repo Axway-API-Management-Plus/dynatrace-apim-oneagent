@@ -66,11 +66,11 @@ public class OneAgentSDKUtils {
             for (Entry<String, HeaderEntry> entry : headers.entrySet()) {
                 outgoingWebRequestTracer.addRequestHeader(entry.getKey(), entry.getValue().toString());
             }
+            outgoingWebRequestTracer.start();
+            addRequestAttributes(appName, orgName);
             if (message != null) {
                 getAttributes(message);
             }
-            outgoingWebRequestTracer.start();
-            addRequestAttributes(appName, orgName);
             pjp.proceed();
         } catch (Throwable e) {
             Trace.error("Dynatrace :: around producer ", e);
