@@ -118,11 +118,13 @@ public class OneAgentSDKUtils {
 
         if (m != null) {
             headers = (HeaderSet) m.get("http.headers");
-            Object[] legZero = (Object[]) m.get("leg0");
-            if (legZero.length > 1) {
-                Object[] information = (Object[]) legZero[1];
-                if (information.length > 3){
-                    correlationId = information[3].toString();
+            if (m.containsKey("leg0")) {
+                Object[] legZero = (Object[]) m.get("leg0");
+                if (legZero.length > 1) {
+                    Object[] information = (Object[]) legZero[1];
+                    if (information.length > 3) {
+                        correlationId = information[3].toString();
+                    }
                 }
             }
         } else if (txn != null) {
