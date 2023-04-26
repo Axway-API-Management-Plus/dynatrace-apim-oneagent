@@ -28,19 +28,30 @@ gradlew clean jar
 - Copy Aspectj weaver - https://repo1.maven.org/maven2/org/aspectj/aspectjweaver/1.9.6/aspectjweaver-1.9.6.jar to  apigateway/ext/lib
 - Restart API Gateway instances
 - Create a file named jvm.xml under APIGATEWAY_INSTALL_DIR/apigateway/conf/
-## API Gateway without API Manager
-```xml
-<ConfigurationFragment>
-    <VMArg name="-javaagent:/home/axway/Axway-7.7.0-Aug2021/apigateway/ext/lib/aspectjweaver-1.9.6.jar"/>
-    <SystemProperty name="apimanager" value="false" />
-</ConfigurationFragment>
-```
-## API Gateway and API Manager
-```xml
-<ConfigurationFragment>
-    <VMArg name="-javaagent:/home/axway/Axway-7.7.0-Aug2021/apigateway/ext/lib/aspectjweaver-1.9.6.jar"/>
-</ConfigurationFragment>
-```
+    ### API Gateway without API Manager
+    ```xml
+    <ConfigurationFragment>
+        <VMArg name="-javaagent:/home/axway/Axway-7.7.0-Aug2021/apigateway/ext/lib/aspectjweaver-1.9.6.jar"/>
+        <SystemProperty name="apimanager" value="false" />
+    </ConfigurationFragment>
+    ```
+    ### API Gateway and API Manager
+    ```xml
+    <ConfigurationFragment>
+        <VMArg name="-javaagent:/home/axway/Axway-7.7.0-Aug2021/apigateway/ext/lib/aspectjweaver-1.9.6.jar"/>
+    </ConfigurationFragment>
+    ```
+
+- Create Request Attributes in Dynatrace.
+    - AxwayAppId
+    - AxwayAppName
+    - AxwayCorrelationId
+    - AxwayOrgName
+     
+     Go to Settings > Server-side service monitoring > Request Attributes > Define a new request attribute.  Create a Request Attribute for each property with a datasource configured to use an "SDK custom attribute" as in the following screenshot.
+     
+    ![image](https://user-images.githubusercontent.com/58127265/234663741-32b38f29-371a-4413-9c1a-5b81b6a56af8.png)
+
 
 ## Contributing
 
