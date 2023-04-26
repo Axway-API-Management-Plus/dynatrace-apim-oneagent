@@ -12,11 +12,9 @@ import com.vordel.circuit.net.State;
 import com.vordel.dwe.http.ServerTransaction;
 import com.vordel.mime.HeaderSet;
 import com.vordel.trace.Trace;
-import com.vordel.vary.VariantObject;
 import org.aspectj.lang.ProceedingJoinPoint;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -120,20 +118,7 @@ public class OneAgentSDKUtils {
 
         if (m != null) {
             headers = (HeaderSet) m.get("http.headers");
-            /*
-            if (m.containsKey("leg0")) {
-                Trace.debug("Dynatrace :: Leg0 " + m.get("leg0").getClass());
-                VariantObject legZero = (VariantObject) m.get("leg0");
-
-                Trace.debug("Dynatrace :: Getting Leg0 data" + legZero);
-                if (legZero) {
-                    Object[] information = (Object[]) legZero[1];
-                    if (information.length > 3) {
-                        correlationId = information[3].toString();
-                    }
-                }
-            }
-             */
+            correlationId = m.getIDBase().toString();
         } else if (txn != null) {
             headers = txn.getHeaders();
         }
