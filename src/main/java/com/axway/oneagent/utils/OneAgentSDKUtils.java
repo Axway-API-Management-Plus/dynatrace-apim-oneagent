@@ -272,7 +272,7 @@ public class OneAgentSDKUtils {
         if (correlationId != null) {
             map.put("AxwayCorrelationId", "Id-" + correlationId);
         }
-
+        Trace.info("Dynatrace :: Application Id :"+appId + "Application Name :"+appName);
         addRequestAttributes(map);
     }
 
