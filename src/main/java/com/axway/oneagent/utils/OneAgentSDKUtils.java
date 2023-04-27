@@ -17,6 +17,7 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class OneAgentSDKUtils {
     static OneAgentSDK oneAgentSdk = OneAgentSDKFactory.createInstance();
@@ -63,7 +64,7 @@ public class OneAgentSDKUtils {
         try {
             String outgoingTag = outgoingWebRequestTracer.getDynatraceStringTag();
             Trace.debug("Dynatrace :: outgoing x-dynatrace header " + outgoingTag);
-            if(headers != null) {
+            if (headers != null) {
                 headers.setHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME, outgoingTag);
             }
             addOutgoingHeaders(outgoingWebRequestTracer, headers);
@@ -241,15 +242,23 @@ public class OneAgentSDKUtils {
     public static void addIncomingHeaders(IncomingWebRequestTracer tracer, HeaderSet headers) {
         if (headers != null) {
             for (Map.Entry<String, HeaderSet.HeaderEntry> entry : headers.entrySet()) {
-                tracer.addRequestHeader(entry.getKey(), entry.getValue().toString());
+                String value = getHeaderValues(entry);
+                tracer.addRequestHeader(entry.getKey(), value);
             }
         }
     }
 
-    public static void addOutgoingHeaders(OutgoingWebRequestTracer tracer, HeaderSet headers) {
+    public static String getHeaderValues(Map.Entry<String, HeaderSet.HeaderEntry> entry) {
+        return entry.getValue().stream().
+            map(Object::toString).
+            collect(Collectors.joining(","));
+    }
+
+    public static void addOutgoingHeaders(OutgoingWebRequestTracer outgoingWebRequestTracer, HeaderSet headers) {
         if (headers != null) {
             for (Map.Entry<String, HeaderSet.HeaderEntry> entry : headers.entrySet()) {
-                tracer.addRequestHeader(entry.getKey(), entry.getValue().toString());
+                String value = getHeaderValues(entry);
+                outgoingWebRequestTracer.addRequestHeader(entry.getKey(), value);
             }
         }
     }
@@ -272,7 +281,7 @@ public class OneAgentSDKUtils {
         if (correlationId != null) {
             map.put("AxwayCorrelationId", "Id-" + correlationId);
         }
-        Trace.info("Dynatrace :: Application Id :"+appId + " - Application Name : "+appName);
+        Trace.info("Dynatrace :: Application Id :" + appId + " - Application Name : " + appName);
         addRequestAttributes(map);
     }
 
