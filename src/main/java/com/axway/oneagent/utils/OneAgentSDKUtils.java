@@ -61,7 +61,6 @@ public class OneAgentSDKUtils {
             getHTTPMethod(message));
 
         try {
-            addRequestAttributes(appName, orgName, appId, null);
             String outgoingTag = outgoingWebRequestTracer.getDynatraceStringTag();
             Trace.debug("Dynatrace :: outgoing x-dynatrace header " + outgoingTag);
             if(headers != null) {
@@ -69,6 +68,7 @@ public class OneAgentSDKUtils {
             }
             addOutgoingHeaders(outgoingWebRequestTracer, headers);
             outgoingWebRequestTracer.start();
+            addRequestAttributes(appName, orgName, appId, null);
             Trace.debug("Dynatrace :: Get Message Attributes");
             getAttributes(message);
             pjp.proceed();
@@ -109,8 +109,8 @@ public class OneAgentSDKUtils {
             Trace.debug("Dynatrace :: X-Dynatrace-Header " + receivedTag);
             tracer.setDynatraceStringTag(receivedTag);
             addIncomingHeaders(tracer, headers);
-            addRequestAttributes(appName, orgName, appId, correlationId);
             tracer.start();
+            addRequestAttributes(appName, orgName, appId, correlationId);
             if (!receivedTag.startsWith("FW")) {
                 int NA_index = receivedTag.indexOf("NA=");
                 int SN_index = receivedTag.indexOf("SN=");
@@ -138,9 +138,9 @@ public class OneAgentSDKUtils {
                 tracer.error(e);
             }
         } else {
-            addRequestAttributes(appName, orgName, appId, correlationId);
             addIncomingHeaders(tracer, headers);
             tracer.start();
+            addRequestAttributes(appName, orgName, appId, correlationId);
             try {
                 pjpProceed = pjp.proceed();
             } catch (Throwable e) {
@@ -272,7 +272,7 @@ public class OneAgentSDKUtils {
         if (correlationId != null) {
             map.put("AxwayCorrelationId", "Id-" + correlationId);
         }
-        Trace.info("Dynatrace :: Application Id :"+appId + "Application Name :"+appName);
+        Trace.info("Dynatrace :: Application Id :"+appId + " - Application Name : "+appName);
         addRequestAttributes(map);
     }
 
