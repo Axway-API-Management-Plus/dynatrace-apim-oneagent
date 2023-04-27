@@ -61,14 +61,14 @@ public class OneAgentSDKUtils {
             getHTTPMethod(message));
 
         try {
-            outgoingWebRequestTracer.start();
             addRequestAttributes(appName, orgName, appId, null);
             String outgoingTag = outgoingWebRequestTracer.getDynatraceStringTag();
-            Trace.info("Dynatrace :: outgoing x-dynatrace header " + outgoingTag);
+            Trace.debug("Dynatrace :: outgoing x-dynatrace header " + outgoingTag);
             if(headers != null) {
                 headers.setHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME, outgoingTag);
             }
             addOutgoingHeaders(outgoingWebRequestTracer, headers);
+            outgoingWebRequestTracer.start();
             Trace.debug("Dynatrace :: Get Message Attributes");
             getAttributes(message);
             pjp.proceed();
@@ -106,12 +106,11 @@ public class OneAgentSDKUtils {
         IncomingWebRequestTracer tracer = createIncomingWebRequestTracer(m, txn, wsInfo);
         if (headers != null && headers.hasHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME)) {
             String receivedTag = headers.getHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME);
-            Trace.info("Dynatrace :: X-Dynatrace-Header " + receivedTag);
+            Trace.debug("Dynatrace :: X-Dynatrace-Header " + receivedTag);
             tracer.setDynatraceStringTag(receivedTag);
-            tracer.start();
             addIncomingHeaders(tracer, headers);
             addRequestAttributes(appName, orgName, appId, correlationId);
-
+            tracer.start();
             if (!receivedTag.startsWith("FW")) {
                 int NA_index = receivedTag.indexOf("NA=");
                 int SN_index = receivedTag.indexOf("SN=");
@@ -139,9 +138,9 @@ public class OneAgentSDKUtils {
                 tracer.error(e);
             }
         } else {
-            tracer.start();
             addRequestAttributes(appName, orgName, appId, correlationId);
             addIncomingHeaders(tracer, headers);
+            tracer.start();
             try {
                 pjpProceed = pjp.proceed();
             } catch (Throwable e) {
