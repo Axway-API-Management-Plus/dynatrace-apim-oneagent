@@ -62,15 +62,14 @@ public class OneAgentSDKUtils {
             getHTTPMethod(message));
 
         try {
+            addOutgoingHeaders(outgoingWebRequestTracer, headers);
+            outgoingWebRequestTracer.start();
             String outgoingTag = outgoingWebRequestTracer.getDynatraceStringTag();
             Trace.debug("Dynatrace :: outgoing x-dynatrace header " + outgoingTag);
             if (headers != null) {
                 headers.setHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME, outgoingTag);
             }
-            addOutgoingHeaders(outgoingWebRequestTracer, headers);
-            outgoingWebRequestTracer.start();
             addRequestAttributes(appName, orgName, appId, null);
-            Trace.debug("Dynatrace :: Get Message Attributes");
             getAttributes(message);
             pjp.proceed();
         } catch (Throwable e) {
@@ -88,7 +87,6 @@ public class OneAgentSDKUtils {
         Trace.debug("Dynatrace :: Starting around consumer");
         Object pjpProceed = null;
         WebApplicationInfo wsInfo = oneAgentSdk.createWebApplicationInfo("Axway Gateway", apiName, apiContextRoot);
-
         HeaderSet headers = null;
         String correlationId = null;
 
@@ -103,7 +101,6 @@ public class OneAgentSDKUtils {
         } else {
             Trace.debug("Dynatrace :: Consumer Headers before proceed: " + headers);
         }
-
         IncomingWebRequestTracer tracer = createIncomingWebRequestTracer(m, txn, wsInfo);
         if (headers != null && headers.hasHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME)) {
             String receivedTag = headers.getHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME);
@@ -157,7 +154,6 @@ public class OneAgentSDKUtils {
 
     private static IncomingWebRequestTracer createIncomingWebRequestTracer(Message m, ServerTransaction txn, WebApplicationInfo wsInfo) {
         IncomingWebRequestTracer tracer = null;
-
         if (m != null) {
             String httpURL = "https://" + readHostNameFromHttpHeader(m) + m.get("http.request.uri").toString();
             tracer = oneAgentSdk.traceIncomingWebRequest(wsInfo, httpURL, m.get("http.request.verb").toString());
@@ -192,7 +188,6 @@ public class OneAgentSDKUtils {
         String clientName = (String) message.get("message.client.name");
         if (clientName != null)
             getClientName(clientName);
-
     }
 
     public static void NeoLoad_Transaction(String value) {
@@ -222,7 +217,6 @@ public class OneAgentSDKUtils {
     }
 
     public static String getRequestURL(Message message) {
-
         try {
             return message.get("http.request.uri").toString();
         } catch (Exception ex) {
@@ -269,15 +263,12 @@ public class OneAgentSDKUtils {
         if (appName != null) {
             map.put("AxwayAppName", appName);
         }
-
         if (orgName != null) {
             map.put("AxwayOrgName", orgName);
         }
-
         if (appId != null) {
             map.put("AxwayAppId", appId);
         }
-
         if (correlationId != null) {
             map.put("AxwayCorrelationId", "Id-" + correlationId);
         }
