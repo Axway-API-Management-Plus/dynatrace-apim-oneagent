@@ -17,7 +17,7 @@ import java.util.Map;
 @Aspect
 public class AxwayAspect {
 
-    private boolean isAPIManager;
+    private final boolean isAPIManager;
 
     public AxwayAspect() {
         isAPIManager = Boolean.parseBoolean(System.getProperty("apimanager", "true"));
@@ -47,7 +47,8 @@ public class AxwayAspect {
             String apiContextRoot = "/";
             String orgName = "defaultFrontend";
             String appName = "defaultFrontend";
-            OneAgentSDKUtils.aroundConsumer(pjp, null, apiName, apiContextRoot, appName, orgName, txn);
+            String appId = "defaultFrontend";
+            OneAgentSDKUtils.aroundConsumer(pjp, null, apiName, apiContextRoot, appName, orgName, appId, txn);
         } else {
             pjp.proceed();
         }
@@ -62,26 +63,30 @@ public class AxwayAspect {
     @Around("invokeDisposePointcut(txn, m, lastChance)")
     public Object invokeAroundAdvice(ProceedingJoinPoint pjp, ServerTransaction txn, Message m,
                                      MessageProcessor lastChance) {
-
         String[] uriSplit = OneAgentSDKUtils.getRequestURL(m).split("/");
         String apiName;
         String apiContextRoot = "/";
         String orgName = "default";
         String appName = "default";
+        String appId = "default";
 
         if (m.get("authentication.application.name") != null) {
             appName = m.get("authentication.application.name").toString();
         }
-
         if (m.get("authentication.organization.name") != null) {
             orgName = m.get("authentication.organization.name").toString();
         }
-
         if (m.get("api.name") != null) {
             apiName = m.get("api.name").toString();
         } else {
             apiName = uriSplit[1];
         }
-        return OneAgentSDKUtils.aroundConsumer(pjp, m, apiName, apiContextRoot, appName, orgName, null);
+        if (m.get("api.path") != null) {
+            apiContextRoot = m.get("api.path").toString();
+        }
+        if (m.get("authentication.subject.id") != null) {
+            appId = m.get("authentication.subject.id").toString();
+        }
+        return OneAgentSDKUtils.aroundConsumer(pjp, m, apiName, apiContextRoot, appName, orgName, appId, null);
     }
 }

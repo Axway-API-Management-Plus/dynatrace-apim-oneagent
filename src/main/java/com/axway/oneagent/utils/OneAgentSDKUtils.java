@@ -60,7 +60,6 @@ public class OneAgentSDKUtils {
         }
         OutgoingWebRequestTracer outgoingWebRequestTracer = oneAgentSdk.traceOutgoingWebRequest(getRequestURL(message),
             getHTTPMethod(message));
-
         try {
             addOutgoingHeaders(outgoingWebRequestTracer, headers);
             outgoingWebRequestTracer.start();
@@ -89,7 +88,6 @@ public class OneAgentSDKUtils {
         WebApplicationInfo wsInfo = oneAgentSdk.createWebApplicationInfo("Axway Gateway", apiName, apiContextRoot);
         HeaderSet headers = null;
         String correlationId = null;
-
         if (m != null) {
             headers = (HeaderSet) m.get("http.headers");
             correlationId = m.getIDBase().toString();
