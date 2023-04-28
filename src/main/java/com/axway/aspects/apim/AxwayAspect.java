@@ -17,7 +17,7 @@ import java.util.Map;
 @Aspect
 public class AxwayAspect {
 
-    private boolean isAPIManager;
+    private final boolean isAPIManager;
 
     public AxwayAspect() {
         isAPIManager = Boolean.parseBoolean(System.getProperty("apimanager", "true"));
@@ -63,7 +63,6 @@ public class AxwayAspect {
     @Around("invokeDisposePointcut(txn, m, lastChance)")
     public Object invokeAroundAdvice(ProceedingJoinPoint pjp, ServerTransaction txn, Message m,
                                      MessageProcessor lastChance) {
-
         String[] uriSplit = OneAgentSDKUtils.getRequestURL(m).split("/");
         String apiName;
         String apiContextRoot = "/";
@@ -74,21 +73,17 @@ public class AxwayAspect {
         if (m.get("authentication.application.name") != null) {
             appName = m.get("authentication.application.name").toString();
         }
-
         if (m.get("authentication.organization.name") != null) {
             orgName = m.get("authentication.organization.name").toString();
         }
-
         if (m.get("api.name") != null) {
             apiName = m.get("api.name").toString();
         } else {
             apiName = uriSplit[1];
         }
-
         if (m.get("api.path") != null) {
             apiContextRoot = m.get("api.path").toString();
         }
-
         if (m.get("authentication.subject.id") != null) {
             appId = m.get("authentication.subject.id").toString();
         }
