@@ -6,7 +6,7 @@ import com.vordel.trace.Trace;
 public class TraceLoggingCallback implements LoggingCallback {
     @Override
     public void warn(String message) {
-        Trace.info("DynatraceModule :" + message);
+        Trace.fatal("DynatraceModule :" + message);
     }
     @Override
     public void error(String message) {
