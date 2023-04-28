@@ -8,7 +8,6 @@ public class TraceLoggingCallback implements LoggingCallback {
     public void warn(String message) {
         Trace.info("DynatraceModule :" + message);
     }
-
     @Override
     public void error(String message) {
         Trace.error("DynatraceModule :" + message);
