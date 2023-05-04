@@ -44,7 +44,7 @@ public class AxwayAspect {
         if (!isAPIManager) {
             String[] uriSplit = txn.getRequestURI().split("/");
             String apiName = uriSplit[1];
-            String apiContextRoot = "/";
+            String apiContextRoot = txn.getRequestURI();
             String orgName = "defaultFrontend";
             String appName = "defaultFrontend";
             String appId = "defaultFrontend";

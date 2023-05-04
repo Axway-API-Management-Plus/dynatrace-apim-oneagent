@@ -45,7 +45,7 @@ public class OneAgentSDKUtils {
             Field headersField = State.class.getDeclaredField("headers");
             headersField.setAccessible(true);
             headers = (HeaderSet) headersField.get(state);
-            Trace.debug("Dynatrace :: Producer Headers before proceed: " + headers.toString());
+            Trace.debug("Dynatrace :: Producer Headers before proceed: " + headers);
             Field messageField = State.class.getDeclaredField("message");
             messageField.setAccessible(true);
             message = (Message) messageField.get(state);
@@ -58,8 +58,7 @@ public class OneAgentSDKUtils {
         } catch (Exception e) {
             Trace.error("around producer ", e);
         }
-        OutgoingWebRequestTracer outgoingWebRequestTracer = oneAgentSdk.traceOutgoingWebRequest(getRequestURL(message),
-            getHTTPMethod(message));
+        OutgoingWebRequestTracer outgoingWebRequestTracer = oneAgentSdk.traceOutgoingWebRequest(getRequestURL(message), getHTTPMethod(message));
         try {
             addOutgoingHeaders(outgoingWebRequestTracer, headers);
             outgoingWebRequestTracer.start();
