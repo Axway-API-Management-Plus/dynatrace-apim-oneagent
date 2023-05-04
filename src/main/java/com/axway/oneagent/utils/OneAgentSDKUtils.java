@@ -66,6 +66,7 @@ public class OneAgentSDKUtils {
             Trace.debug("Dynatrace :: outgoing x-dynatrace header " + outgoingTag);
             if (headers != null) {
                 headers.setHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME, outgoingTag);
+                outgoingWebRequestTracer.addRequestHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME, outgoingTag);
             }
             addRequestAttributes(appName, orgName, appId, null);
             getAttributes(message);
