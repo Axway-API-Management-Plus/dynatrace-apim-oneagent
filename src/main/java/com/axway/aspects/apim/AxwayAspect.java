@@ -76,12 +76,12 @@ public class AxwayAspect {
             orgName = m.get("authentication.organization.name").toString();
         }
         if (m.get("api.name") != null) {
-            apiName = m.get("api.name").toString();
+            apiName = (String) m.get("api.name");
         } else {
             apiName = uriSplit[1];
         }
         if (m.get("api.path") != null) {
-            apiContextRoot = m.get("api.path").toString();
+            apiContextRoot = (String) m.get("api.path");
         }
         if (m.get("authentication.subject.id") != null) {
             appId = m.get("authentication.subject.id").toString();
