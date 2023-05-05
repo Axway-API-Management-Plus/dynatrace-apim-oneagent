@@ -51,13 +51,15 @@ public class OneAgentSDKUtils {
             Field messageField = State.class.getDeclaredField("message");
             messageField.setAccessible(true);
             Message message = (Message) messageField.get(state);
-            String dynatraceStart = (String) message.get("dynatraceStart");
             String requestUrl = getRequestURL(message);
             String httpVerb = getHTTPMethod(message);
-            if (AxwayAspect.isAPIManager && dynatraceStart == null) {
-                Trace.debug("Connect to URL filter invoked from API custom security invoke policy");
-                CachedData cachedData = new CachedData(headers, requestUrl, httpVerb);
-                message.put("dynatraceInvokeSecurityData", cachedData);
+            if (AxwayAspect.isAPIManager) {
+                String dynatraceStart = (String) message.get("dynatraceStart");
+                if(dynatraceStart == null) {
+                    Trace.debug("Connect to URL filter invoked from API custom security invoke policy");
+                    CachedData cachedData = new CachedData(headers, requestUrl, httpVerb);
+                    message.put("dynatraceInvokeSecurityData", cachedData);
+                }
             } else {
                 processOutgoingTraffic(message, headers, requestUrl, httpVerb);
             }
