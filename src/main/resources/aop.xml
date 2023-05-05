@@ -12,8 +12,7 @@
 		<!-- Weave types that are within the javax.* or org.aspectj.* packages.
 			Also weave all types in the foo package that do not have the @NoWeave annotation. -->
 		<include within="com.vordel..*" />
-		<include within="com.dynatrace..*" />
-
+<!--		<include within="com.dynatrace..*" />-->
 		<!-- Dump all types within the "somepack" package, both before are after
 			they are woven, to the "./_ajdump" folder on disk (for diagnostic purposes) -->
 		<!--<dump within="com..*" beforeandafter="true" />-->

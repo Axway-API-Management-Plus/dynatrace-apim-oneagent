@@ -1,5 +1,6 @@
 package com.axway.oneagent.utils;
 
+import com.axway.aspects.apim.AxwayAspect;
 import com.axway.aspects.apim.TraceLoggingCallback;
 import com.dynatrace.oneagent.sdk.OneAgentSDKFactory;
 import com.dynatrace.oneagent.sdk.api.IncomingWebRequestTracer;
@@ -36,9 +37,7 @@ public class OneAgentSDKUtils {
 
     public static void aroundProducer(ProceedingJoinPoint pjp, State state) {
         Trace.debug("Dynatrace :: Starting around producer");
-        String orgName = "";
-        String appName = "";
-        String appId = "";
+        String orgName = null, appName = null, appId = null;
         Message message = null;
         HeaderSet headers = null;
         try {
@@ -49,14 +48,19 @@ public class OneAgentSDKUtils {
             Field messageField = State.class.getDeclaredField("message");
             messageField.setAccessible(true);
             message = (Message) messageField.get(state);
-            if (message.get("authentication.application.name") != null) {
-                appName = message.get("authentication.application.name").toString();
-            }
-            if (message.get("authentication.organization.name") != null) {
-                orgName = message.get("authentication.organization.name").toString();
-            }
+            appName = (String) message.get("authentication.application.name");
+            orgName = (String) message.get("authentication.organization.name");
+            appId = (String) message.get("authentication.application.name");
         } catch (Exception e) {
             Trace.error("around producer ", e);
+        }
+        if(AxwayAspect.isAPIManager){
+            try {
+                if(appId == null) // skipping http call invoked from custom security policy to avoid  OutgoingWebRequestTracer as starting point - does not work if th security is set as pass through.
+                    pjp.proceed();
+            } catch (Throwable e) {
+                Trace.error("Dynatrace :: around producer ", e);
+            }
         }
         OutgoingWebRequestTracer outgoingWebRequestTracer = oneAgentSdk.traceOutgoingWebRequest(getRequestURL(message), getHTTPMethod(message));
         try {
@@ -65,6 +69,9 @@ public class OneAgentSDKUtils {
             String outgoingTag = outgoingWebRequestTracer.getDynatraceStringTag();
             Trace.debug("Dynatrace :: outgoing x-dynatrace header " + outgoingTag);
             if (headers != null) {
+                if(headers.containsKey(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME)) {
+                    headers.remove(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME);
+                }
                 headers.setHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME, outgoingTag);
                 outgoingWebRequestTracer.addRequestHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME, outgoingTag);
             }

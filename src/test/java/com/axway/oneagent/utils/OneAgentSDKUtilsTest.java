@@ -1,5 +1,6 @@
 package com.axway.oneagent.utils;
 
+import com.dynatrace.oneagent.sdk.api.OneAgentSDK;
 import com.vordel.circuit.Message;
 import com.vordel.dwe.CorrelationID;
 import com.vordel.mime.HeaderSet;
@@ -42,9 +43,7 @@ public class OneAgentSDKUtilsTest {
 
     @Test
     public void testMultiValueHeader() {
-        Message message = new Message(PowerMockito.mock(CorrelationID.class), null);
         HeaderSet headerSet = new HeaderSet();
-        message.put("http.headers", headerSet);
         headerSet.addHeader("Cf-Visitor", "scheme");
         headerSet.addHeader("Cf-Visitor", "https");
         for (Map.Entry<String, HeaderSet.HeaderEntry> entry : headerSet.entrySet()) {
@@ -55,14 +54,26 @@ public class OneAgentSDKUtilsTest {
 
     @Test
     public void testSingleHeader() {
-        Message message = new Message(PowerMockito.mock(CorrelationID.class), null);
         HeaderSet headerSet = new HeaderSet();
-        message.put("http.headers", headerSet);
         headerSet.addHeader("Host", "10.129.61.129");
         for (Map.Entry<String, HeaderSet.HeaderEntry> entry : headerSet.entrySet()) {
             String value = OneAgentSDKUtils.getHeaderValues(entry);
             Assert.assertEquals("10.129.61.129", value);
         }
+    }
+
+    @Test
+    public void testDuplicateHeaderRemoval() {
+
+        HeaderSet headerSet = new HeaderSet();
+        headerSet.addHeader("Host", "10.129.61.129");
+        headerSet.addHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME, "FW123");
+        if(headerSet.containsKey(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME)) {
+            headerSet.remove(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME);
+        }
+        headerSet.addHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME, "FW12356");
+        System.out.println(headerSet);
+        Assert.assertEquals(headerSet.getHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME), "FW12356");
     }
 
 }

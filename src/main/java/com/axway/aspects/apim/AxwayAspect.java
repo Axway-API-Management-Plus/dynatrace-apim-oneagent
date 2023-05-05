@@ -17,10 +17,9 @@ import java.util.Map;
 @Aspect
 public class AxwayAspect {
 
-    private final boolean isAPIManager;
+    public static final boolean isAPIManager = Boolean.parseBoolean(System.getProperty("apimanager", "true"));
 
     public AxwayAspect() {
-        isAPIManager = Boolean.parseBoolean(System.getProperty("apimanager", "true"));
     }
 
     @Pointcut("call (* com.vordel.circuit.net.State.tryTransaction()) && target(t)")
@@ -44,7 +43,7 @@ public class AxwayAspect {
         if (!isAPIManager) {
             String[] uriSplit = txn.getRequestURI().split("/");
             String apiName = uriSplit[1];
-            String apiContextRoot = txn.getRequestURI();
+            String apiContextRoot = "/";
             String orgName = "defaultFrontend";
             String appName = "defaultFrontend";
             String appId = "defaultFrontend";
