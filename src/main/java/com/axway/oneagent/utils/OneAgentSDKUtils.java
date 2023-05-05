@@ -50,18 +50,19 @@ public class OneAgentSDKUtils {
             message = (Message) messageField.get(state);
             appName = (String) message.get("authentication.application.name");
             orgName = (String) message.get("authentication.organization.name");
-            appId = (String) message.get("authentication.application.name");
+            appId = (String) message.get("authentication.application.id");
+            if (AxwayAspect.isAPIManager) {
+                try {
+                    if (message.get("apiruntime.authN") == null) // skipping http call invoked from custom security policy to avoid  OutgoingWebRequestTracer as starting point variable apiruntime.authN is crated after authN
+                        pjp.proceed();
+                } catch (Throwable e) {
+                    Trace.error("Dynatrace :: around producer ", e);
+                }
+            }
         } catch (Exception e) {
             Trace.error("around producer ", e);
         }
-        if(AxwayAspect.isAPIManager){
-            try {
-                if(appId == null) // skipping http call invoked from custom security policy to avoid  OutgoingWebRequestTracer as starting point - does not work if th security is set as pass through.
-                    pjp.proceed();
-            } catch (Throwable e) {
-                Trace.error("Dynatrace :: around producer ", e);
-            }
-        }
+
         OutgoingWebRequestTracer outgoingWebRequestTracer = oneAgentSdk.traceOutgoingWebRequest(getRequestURL(message), getHTTPMethod(message));
         try {
             addOutgoingHeaders(outgoingWebRequestTracer, headers);
@@ -69,7 +70,7 @@ public class OneAgentSDKUtils {
             String outgoingTag = outgoingWebRequestTracer.getDynatraceStringTag();
             Trace.debug("Dynatrace :: outgoing x-dynatrace header " + outgoingTag);
             if (headers != null) {
-                if(headers.containsKey(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME)) {
+                if (headers.containsKey(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME)) {
                     headers.remove(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME);
                 }
                 headers.setHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME, outgoingTag);
