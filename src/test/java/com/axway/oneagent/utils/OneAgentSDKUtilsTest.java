@@ -76,4 +76,14 @@ public class OneAgentSDKUtilsTest {
         Assert.assertEquals(headerSet.getHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME), "FW12356");
     }
 
+    @Test
+    public void testResponseCode(){
+        Message message = new Message(PowerMockito.mock(CorrelationID.class), null);
+        message.put("http.response.status", 200);
+        Assert.assertEquals(OneAgentSDKUtils.getHTTPStatusCode(message), 200);
+        message.put("http.response.status", null);
+        Assert.assertEquals(OneAgentSDKUtils.getHTTPStatusCode(message), 0);
+
+    }
+
 }

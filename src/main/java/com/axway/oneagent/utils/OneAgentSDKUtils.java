@@ -54,8 +54,8 @@ public class OneAgentSDKUtils {
             String requestUrl = getRequestURL(message);
             String httpVerb = getHTTPMethod(message);
             if (AxwayAspect.isAPIManager) {
-                String dynatraceStart = (String) message.get("dynatraceStart");
-                if(dynatraceStart == null) {
+                Object dynatraceStart = message.get("dynatraceStart");
+                if (dynatraceStart == null) {
                     Trace.debug("Connect to URL filter invoked from API custom security invoke policy");
                     CachedData cachedData = new CachedData(headers, requestUrl, httpVerb);
                     message.put("dynatraceInvokeSecurityData", cachedData);
@@ -244,11 +244,13 @@ public class OneAgentSDKUtils {
     }
 
     public static int getHTTPStatusCode(Message message) {
-        try {
-            return Integer.parseInt(message.get("http.response.status").toString());
-        } catch (Exception ex) {
+        if (message == null)
             return 0;
-        }
+        Object httpStatusCode = message.get("http.response.status");
+        if (httpStatusCode != null)
+            return (Integer) httpStatusCode;
+        else
+            return 0;
     }
 
     public static void addIncomingHeaders(IncomingWebRequestTracer tracer, HeaderSet headers) {
