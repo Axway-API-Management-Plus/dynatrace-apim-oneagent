@@ -53,8 +53,10 @@ public class OneAgentSDKUtils {
             appId = (String) message.get("authentication.application.id");
             if (AxwayAspect.isAPIManager) {
                 try {
-                    if (message.get("apiruntime.authN") == null) // skipping http call invoked from custom security policy to avoid  OutgoingWebRequestTracer as starting point variable apiruntime.authN is crated after authN
+                    if (message.get("apiruntime.authN") == null) {// skipping http call invoked from custom security policy to avoid  OutgoingWebRequestTracer as starting point variable apiruntime.authN is crated after authN
                         pjp.proceed();
+                        return;
+                    }
                 } catch (Throwable e) {
                     Trace.error("Dynatrace :: around producer ", e);
                 }
