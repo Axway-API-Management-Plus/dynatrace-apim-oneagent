@@ -81,9 +81,8 @@ public class OneAgentSDKUtilsTest {
         Message message = new Message(PowerMockito.mock(CorrelationID.class), null);
         message.put("http.response.status", 200);
         Assert.assertEquals(OneAgentSDKUtils.getHTTPStatusCode(message), 200);
-        message.put("http.response.status", null);
+        message.remove("http.response.status");
         Assert.assertEquals(OneAgentSDKUtils.getHTTPStatusCode(message), 0);
-
     }
 
 }

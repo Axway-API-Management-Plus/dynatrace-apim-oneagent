@@ -68,24 +68,11 @@ public class AxwayAspect {
         String orgName = "default";
         String appName = "default";
         String appId = "default";
-
-        if (m.get("authentication.application.name") != null) {
-            appName = m.get("authentication.application.name").toString();
-        }
-        if (m.get("authentication.organization.name") != null) {
-            orgName = m.get("authentication.organization.name").toString();
-        }
-        if (m.get("api.name") != null) {
-            apiName = (String) m.get("api.name");
-        } else {
-            apiName = uriSplit[1];
-        }
-        if (m.get("api.path") != null) {
-            apiContextRoot = (String) m.get("api.path");
-        }
-        if (m.get("authentication.subject.id") != null) {
-            appId = m.get("authentication.subject.id").toString();
-        }
+        appName = (String) m.getOrDefault("authentication.application.name", appName);
+        orgName = (String) m.getOrDefault("authentication.organization.name", orgName);
+        apiName = (String) m.getOrDefault("api.name", uriSplit[1]);
+        apiContextRoot = (String) m.getOrDefault("api.path", apiContextRoot);
+        appId = (String) m.getOrDefault("authentication.subject.id", appId);
         return OneAgentSDKUtils.aroundConsumer(pjp, m, apiName, apiContextRoot, appName, orgName, appId, null);
     }
 }

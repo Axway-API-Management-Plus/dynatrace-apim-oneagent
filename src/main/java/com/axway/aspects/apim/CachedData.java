@@ -8,10 +8,13 @@ public class CachedData {
     private final String requestUrl;
     private final String httpVerb;
 
-    public CachedData(HeaderSet headerSet, String requestUrl, String httpVerb) {
+    private final int httpStatusCode;
+
+    public CachedData(HeaderSet headerSet, String requestUrl, String httpVerb, int httpStatusCode) {
         this.headerSet = headerSet;
         this.requestUrl = requestUrl;
         this.httpVerb = httpVerb;
+        this.httpStatusCode = httpStatusCode;
     }
 
     public HeaderSet getHeaderSet() {
@@ -24,5 +27,9 @@ public class CachedData {
 
     public String getHttpVerb() {
         return httpVerb;
+    }
+
+    public int getHttpStatusCode() {
+        return httpStatusCode;
     }
 }
