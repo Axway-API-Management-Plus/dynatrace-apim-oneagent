@@ -140,16 +140,20 @@ public class OneAgentSDKUtils {
         }
         tracer.setStatusCode(getHTTPStatusCode(message));
         tracer.end();
-        if (message != null && AxwayAspect.isAPIManager) {
-            List<CachedData> dynatraceInvokeSecurityData = (List<CachedData>) message.get("dynatraceInvokeSecurityData");
-            if (dynatraceInvokeSecurityData != null) {
-                Trace.debug("Processing Connect to URL filter invoked from API custom security invoke policy data");
-                for (CachedData cachedData : dynatraceInvokeSecurityData) {
-                    processOutgoingTraffic(message, cachedData.getHeaderSet(), cachedData.getRequestUrl(), cachedData.getHttpVerb(), cachedData.getHttpStatusCode());
+        try {
+            if (message != null && AxwayAspect.isAPIManager) {
+                List<CachedData> dynatraceInvokeSecurityData = (List<CachedData>) message.get("dynatraceInvokeSecurityData");
+                if (dynatraceInvokeSecurityData != null) {
+                    Trace.debug("Processing Connect to URL filter invoked from API custom security invoke policy data");
+                    for (CachedData cachedData : dynatraceInvokeSecurityData) {
+                        processOutgoingTraffic(message, cachedData.getHeaderSet(), cachedData.getRequestUrl(), cachedData.getHttpVerb(), cachedData.getHttpStatusCode());
+                    }
+                    message.remove("dynatraceInvokeSecurityData");
                 }
-                message.remove("dynatraceInvokeSecurityData");
+                message.put("dynatraceStart", "1");
             }
-            message.put("dynatraceStart", "1");
+        } catch (Exception e) {
+            Trace.error("Dynatrace :: around consumer", e);
         }
         Trace.debug("Dynatrace :: Ending around consumer");
         return pjpProceed;
