@@ -3,11 +3,12 @@ package com.axway.aspects.apim;
 import com.axway.oneagent.utils.OneAgentSDKUtils;
 import com.vordel.circuit.Message;
 import com.vordel.circuit.MessageProcessor;
-import com.vordel.circuit.net.State;
+import com.vordel.config.Circuit;
 import com.vordel.dwe.CorrelationID;
 import com.vordel.dwe.http.HTTPProtocol;
 import com.vordel.dwe.http.ServerTransaction;
 import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
@@ -22,13 +23,15 @@ public class AxwayAspect {
     public AxwayAspect() {
     }
 
-    @Pointcut("call (* com.vordel.circuit.net.State.tryTransaction()) && target(t)")
-    public void tryTransactionPointCut(State t) {
+
+    @Pointcut("execution(public boolean com.vordel.circuit.net.ConnectionProcessor.invoke(..)) && args (c, m)")
+    public void invokeConnectToUrl(Circuit c, Message m) {
+
     }
 
-    @Around("tryTransactionPointCut(t)")
-    public void tryTransactionAroundAdvice(ProceedingJoinPoint pjp, State t) {
-        OneAgentSDKUtils.aroundProducer(pjp, t);
+    @After("invokeConnectToUrl(c, m)")
+    public void invokeConnectToUrlAroundAdvice( Circuit c, Message m) {
+         OneAgentSDKUtils.aroundProducer( m, c);
     }
 
 
