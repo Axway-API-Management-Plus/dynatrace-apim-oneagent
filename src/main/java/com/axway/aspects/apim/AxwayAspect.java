@@ -28,18 +28,14 @@ public class AxwayAspect {
     public void invokeConnectToUrl(Circuit c, Message m) {
 
     }
-
     @After("invokeConnectToUrl(c, m)")
-    public void invokeConnectToUrlAroundAdvice( Circuit c, Message m) {
-         OneAgentSDKUtils.aroundProducer( m, c);
+    public void invokeConnectToUrlAroundAdvice(Circuit c, Message m) {
+        OneAgentSDKUtils.aroundProducer(m, c);
     }
-
-
     @Pointcut("call(* com.vordel.dwe.http.HTTPPlugin.invokeDispose(..)) && args (protocol, handler, txn, id, loopbackMessage)")
     public void invokeDisposePointcutGateway(HTTPProtocol protocol, HTTPProtocol handler, ServerTransaction txn, CorrelationID id, Map<String, Object> loopbackMessage) {
 
     }
-
     @Around("invokeDisposePointcutGateway(protocol, handler, txn, id, loopbackMessage)")
     public void invokeDisposeAroundAdvice(ProceedingJoinPoint pjp, HTTPProtocol protocol, HTTPProtocol handler,
                                           ServerTransaction txn, CorrelationID id, Map<String, Object> loopbackMessage) throws Throwable {
@@ -55,13 +51,10 @@ public class AxwayAspect {
             pjp.proceed();
         }
     }
-
-
     @Pointcut("call(* com.vordel.coreapireg.runtime.broker.InvokableMethod.invoke(..)) && args (txn, m, lastChance)")
     public void invokeDisposePointcut(ServerTransaction txn, Message m, MessageProcessor lastChance) {
 
     }
-
     @Around("invokeDisposePointcut(txn, m, lastChance)")
     public Object invokeAroundAdvice(ProceedingJoinPoint pjp, ServerTransaction txn, Message m,
                                      MessageProcessor lastChance) {
