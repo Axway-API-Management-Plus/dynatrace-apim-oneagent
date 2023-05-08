@@ -4,11 +4,13 @@ import com.axway.oneagent.utils.OneAgentSDKUtils;
 import com.vordel.circuit.Message;
 import com.vordel.circuit.MessageProcessor;
 import com.vordel.config.Circuit;
+import com.vordel.coreapireg.runtime.PathResolverResult;
+import com.vordel.coreapireg.runtime.broker.ApiShunt;
+import com.vordel.coreapireg.runtime.broker.InvokableMethod;
 import com.vordel.dwe.CorrelationID;
 import com.vordel.dwe.http.HTTPProtocol;
 import com.vordel.dwe.http.ServerTransaction;
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
@@ -28,14 +30,17 @@ public class AxwayAspect {
     public void invokeConnectToUrl(Circuit c, Message m) {
 
     }
-    @After("invokeConnectToUrl(c, m)")
-    public void invokeConnectToUrlAroundAdvice(Circuit c, Message m) {
-        OneAgentSDKUtils.aroundProducer(m, c);
+
+    @Around("invokeConnectToUrl(c, m)")
+    public Object invokeConnectToUrlAroundAdvice(ProceedingJoinPoint pjp, Circuit c, Message m) {
+        return OneAgentSDKUtils.aroundProducer(pjp, m, c);
     }
+
     @Pointcut("call(* com.vordel.dwe.http.HTTPPlugin.invokeDispose(..)) && args (protocol, handler, txn, id, loopbackMessage)")
     public void invokeDisposePointcutGateway(HTTPProtocol protocol, HTTPProtocol handler, ServerTransaction txn, CorrelationID id, Map<String, Object> loopbackMessage) {
 
     }
+
     @Around("invokeDisposePointcutGateway(protocol, handler, txn, id, loopbackMessage)")
     public void invokeDisposeAroundAdvice(ProceedingJoinPoint pjp, HTTPProtocol protocol, HTTPProtocol handler,
                                           ServerTransaction txn, CorrelationID id, Map<String, Object> loopbackMessage) throws Throwable {
@@ -43,32 +48,30 @@ public class AxwayAspect {
             String[] uriSplit = txn.getRequestURI().split("/");
             String apiName = uriSplit[1];
             String apiContextRoot = "/";
-            String orgName = "defaultFrontend";
-            String appName = "defaultFrontend";
-            String appId = "defaultFrontend";
-            OneAgentSDKUtils.aroundConsumer(pjp, null, apiName, apiContextRoot, appName, orgName, appId, txn);
+            OneAgentSDKUtils.aroundConsumer(pjp, null, apiName, apiContextRoot, txn);
         } else {
             pjp.proceed();
         }
     }
-    @Pointcut("call(* com.vordel.coreapireg.runtime.broker.InvokableMethod.invoke(..)) && args (txn, m, lastChance)")
-    public void invokeDisposePointcut(ServerTransaction txn, Message m, MessageProcessor lastChance) {
+
+    @Pointcut("execution(* com.vordel.coreapireg.runtime.CoreApiBroker.invokeMethod(..)) && args (txn, m, lastChanceHandler, runMethod, resolvedMethod, matchCount, httpMethod, currentApiCallStatus)")
+    public void invokeMethodPointcut(ServerTransaction txn, Message m,
+                                     MessageProcessor lastChanceHandler, InvokableMethod runMethod,
+                                     final PathResolverResult resolvedMethod, final int matchCount,
+                                     String httpMethod, ApiShunt currentApiCallStatus) {
 
     }
-    @Around("invokeDisposePointcut(txn, m, lastChance)")
-    public Object invokeAroundAdvice(ProceedingJoinPoint pjp, ServerTransaction txn, Message m,
-                                     MessageProcessor lastChance) {
+
+    @Around("invokeMethodPointcut(txn, m, lastChanceHandler, runMethod, resolvedMethod, matchCount, httpMethod, currentApiCallStatus)")
+    public Object invokeMethodAroundAdvice(ProceedingJoinPoint pjp, ServerTransaction txn, Message m,
+                                           MessageProcessor lastChanceHandler, InvokableMethod runMethod,
+                                           final PathResolverResult resolvedMethod, final int matchCount,
+                                           String httpMethod, ApiShunt currentApiCallStatus) {
         String[] uriSplit = OneAgentSDKUtils.getRequestURL(m).split("/");
         String apiName;
         String apiContextRoot = "/";
-        String orgName = "default";
-        String appName = "default";
-        String appId = "default";
-        appName = (String) m.getOrDefault("authentication.application.name", appName);
-        orgName = (String) m.getOrDefault("authentication.organization.name", orgName);
         apiName = (String) m.getOrDefault("api.name", uriSplit[1]);
         apiContextRoot = (String) m.getOrDefault("api.path", apiContextRoot);
-        appId = (String) m.getOrDefault("authentication.subject.id", appId);
-        return OneAgentSDKUtils.aroundConsumer(pjp, m, apiName, apiContextRoot, appName, orgName, appId, null);
+        return OneAgentSDKUtils.aroundConsumer(pjp, m, apiName, apiContextRoot, txn);
     }
 }
