@@ -38,15 +38,14 @@ public class OneAgentSDKUtils {
         }
     }
 
-    public static Object aroundProducer(ProceedingJoinPoint pjp, Message message, Circuit circuit) {
+    public static Object aroundProducer(ProceedingJoinPoint pjp, Message message, Circuit circuit, HeaderSet requestHeaders, String httpVerb) {
         Trace.debug("Dynatrace :: Starting around producer for Policy " + circuit.getName());
         Object object = null;
         String orgName = "default";
         String appName = "default";
         String appId = "default";
-        HeaderSet requestHeaders = (HeaderSet) message.get("http.headers");
         String requestUrl = getRequestURL(message);
-        String httpVerb = getHTTPMethod(message);
+        Trace.debug("Request url :"+requestUrl + " httpVerb "+httpVerb);
         OutgoingWebRequestTracer outgoingWebRequestTracer = oneAgentSdk.traceOutgoingWebRequest(requestUrl, httpVerb);
         try {
             appName = (String) message.getOrDefault("authentication.application.name", appName);
@@ -198,9 +197,6 @@ public class OneAgentSDKUtils {
         oneAgentSdk.addCustomRequestAttribute("KEYID", keyId);
     }
 
-    public static String getHTTPMethod(Message message) {
-        return (String) message.get("http.request.verb");
-    }
 
     public static String getRequestURL(Message message) {
         return message.getOrDefault("http.request.uri", "(null)").toString();
@@ -244,7 +240,6 @@ public class OneAgentSDKUtils {
             }
         }
     }
-
 
     public static void addRequestAttributes(String appName, String orgName, String appId, String correlationId) {
         Map<String, String> map = new HashMap<>();

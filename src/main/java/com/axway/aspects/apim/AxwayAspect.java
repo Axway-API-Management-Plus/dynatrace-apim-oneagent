@@ -10,6 +10,8 @@ import com.vordel.coreapireg.runtime.broker.InvokableMethod;
 import com.vordel.dwe.CorrelationID;
 import com.vordel.dwe.http.HTTPProtocol;
 import com.vordel.dwe.http.ServerTransaction;
+import com.vordel.mime.Body;
+import com.vordel.mime.HeaderSet;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -26,14 +28,14 @@ public class AxwayAspect {
     }
 
 
-    @Pointcut("execution(public boolean com.vordel.circuit.net.ConnectionProcessor.invoke(..)) && args (c, m)")
-    public void invokeConnectToUrl(Circuit c, Message m) {
+    @Pointcut("execution(* com.vordel.circuit.net.ConnectionProcessor.invoke(..)) && args (c, m, headers, verb, body)")
+    public void invokeConnectToUrl(Circuit c, Message m, HeaderSet headers, String verb, Body body) {
 
     }
 
-    @Around("invokeConnectToUrl(c, m)")
-    public Object invokeConnectToUrlAroundAdvice(ProceedingJoinPoint pjp, Circuit c, Message m) {
-        return OneAgentSDKUtils.aroundProducer(pjp, m, c);
+    @Around("invokeConnectToUrl(c, m, headers, verb, body)")
+    public Object invokeConnectToUrlAroundAdvice(ProceedingJoinPoint pjp, Circuit c, Message m, HeaderSet headers, String verb, Body body) {
+        return OneAgentSDKUtils.aroundProducer(pjp, m, c, headers, verb);
     }
 
     @Pointcut("call(* com.vordel.dwe.http.HTTPPlugin.invokeDispose(..)) && args (protocol, handler, txn, id, loopbackMessage)")
