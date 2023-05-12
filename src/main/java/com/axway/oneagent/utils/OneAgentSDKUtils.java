@@ -8,6 +8,7 @@ import com.dynatrace.oneagent.sdk.api.OutgoingWebRequestTracer;
 import com.dynatrace.oneagent.sdk.api.infos.WebApplicationInfo;
 import com.vordel.circuit.Message;
 import com.vordel.config.Circuit;
+import com.vordel.dwe.CorrelationID;
 import com.vordel.dwe.http.ServerTransaction;
 import com.vordel.mime.HeaderSet;
 import com.vordel.trace.Trace;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 
 public class OneAgentSDKUtils {
     private static final OneAgentSDK oneAgentSdk = OneAgentSDKFactory.createInstance();
+    private static final String DEFAULT = "default";
 
     static {
         oneAgentSdk.setLoggingCallback(new TraceLoggingCallback());
@@ -41,19 +43,16 @@ public class OneAgentSDKUtils {
     public static Object aroundProducer(ProceedingJoinPoint pjp, Message message, Circuit circuit, HeaderSet requestHeaders, String httpVerb) {
         Trace.debug("Dynatrace :: Starting around producer for Policy " + circuit.getName());
         Object object = null;
-        String orgName = "default";
-        String appName = "default";
-        String appId = "default";
         String requestUrl = getRequestURL(message);
-        Trace.debug("Request url :"+requestUrl + " httpVerb "+httpVerb);
+        Trace.debug("Request url :" + requestUrl + " httpVerb " + httpVerb);
         OutgoingWebRequestTracer outgoingWebRequestTracer = oneAgentSdk.traceOutgoingWebRequest(requestUrl, httpVerb);
         try {
-            appName = (String) message.getOrDefault("authentication.application.name", appName);
-            orgName = (String) message.getOrDefault("authentication.organization.name", orgName);
-            appId = (String) message.getOrDefault("authentication.subject.id", appId);
+            String appName = (String) message.getOrDefault("authentication.application.name", DEFAULT);
+            String orgName = (String) message.getOrDefault("authentication.organization.name", DEFAULT);
+            String appId = (String) message.getOrDefault("authentication.subject.id", DEFAULT);
             addOutgoingRequestHeaders(outgoingWebRequestTracer, requestHeaders);
             outgoingWebRequestTracer.start();
-            addRequestAttributes(appName, orgName, appId, message.getIDBase().toString());
+            addRequestAttributes(appName, orgName, appId, message.getIDBase());
             String outgoingTag = outgoingWebRequestTracer.getDynatraceStringTag();
             Trace.debug("Dynatrace :: outgoing x-dynatrace header " + outgoingTag);
             if (requestHeaders != null) {
@@ -63,7 +62,7 @@ public class OneAgentSDKUtils {
                 requestHeaders.setHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME, outgoingTag);
                 outgoingWebRequestTracer.addRequestHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME, outgoingTag);
             }
-            getAttributes(message);
+            addAttributes(message);
             object = pjp.proceed();
             HeaderSet responseHeaders = (HeaderSet) message.get("http.headers");
             addOutgoingResponseHeaders(outgoingWebRequestTracer, responseHeaders);
@@ -100,7 +99,8 @@ public class OneAgentSDKUtils {
             tracer.setDynatraceStringTag(receivedTag);
             addIncomingHeaders(tracer, headers);
             tracer.start();
-            oneAgentSdk.addCustomRequestAttribute("AxwayCorrelationId", "Id-" + correlationId);
+            if (correlationId != null)
+                oneAgentSdk.addCustomRequestAttribute("AxwayCorrelationId", "Id-" + correlationId);
             if (!receivedTag.startsWith("FW")) {
                 int NA_index = receivedTag.indexOf("NA=");
                 int SN_index = receivedTag.indexOf("SN=");
@@ -130,6 +130,12 @@ public class OneAgentSDKUtils {
         } catch (Throwable e) {
             Trace.error("Dynatrace :: around consumer", e);
             tracer.error(e);
+        }
+        if( message != null) {
+            String appName = (String) message.getOrDefault("authentication.application.name", DEFAULT);
+            String orgName = (String) message.getOrDefault("authentication.organization.name", DEFAULT);
+            String appId = (String) message.getOrDefault("authentication.subject.id", DEFAULT);
+            addRequestAttributes(appName, orgName, appId, message.getIDBase());
         }
         tracer.setStatusCode(getHTTPStatusCode(message));
         tracer.end();
@@ -163,17 +169,10 @@ public class OneAgentSDKUtils {
         return host;
     }
 
-    public static void getAttributes(Message message) {
-        HeaderSet httpHeaders = (HeaderSet) message.get("http.headers");
-        if (httpHeaders == null)
-            return;
-        String keyId = (String) httpHeaders.get("KeyId");
-        if (keyId != null)
-            getKEYID(keyId);
-
+    public static void addAttributes(Message message) {
         String clientName = (String) message.get("message.client.name");
         if (clientName != null)
-            getClientName(clientName);
+            addClientName(clientName);
     }
 
     public static void NeoLoad_Transaction(String value) {
@@ -188,15 +187,9 @@ public class OneAgentSDKUtils {
         oneAgentSdk.addCustomRequestAttribute("Neoload_Traffic", value);
     }
 
-
-    public static void getClientName(String clientName) {
+    public static void addClientName(String clientName) {
         oneAgentSdk.addCustomRequestAttribute("ClientName", clientName);
     }
-
-    public static void getKEYID(String keyId) {
-        oneAgentSdk.addCustomRequestAttribute("KEYID", keyId);
-    }
-
 
     public static String getRequestURL(Message message) {
         return message.getOrDefault("http.request.uri", "(null)").toString();
@@ -241,15 +234,15 @@ public class OneAgentSDKUtils {
         }
     }
 
-    public static void addRequestAttributes(String appName, String orgName, String appId, String correlationId) {
+    public static void addRequestAttributes(String appName, String orgName, String appId, CorrelationID correlationId) {
         Map<String, String> map = new HashMap<>();
-        if (appName != null) {
+        if (appName != null && !appName.equals(DEFAULT)) {
             map.put("AxwayAppName", appName);
         }
-        if (orgName != null) {
+        if (orgName != null && !orgName.equals(DEFAULT)) {
             map.put("AxwayOrgName", orgName);
         }
-        if (appId != null) {
+        if (appId != null && !appId.equals(DEFAULT)) {
             map.put("AxwayAppId", appId);
         }
         if (correlationId != null) {
