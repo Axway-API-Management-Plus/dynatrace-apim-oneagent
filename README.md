@@ -4,10 +4,9 @@ Axway APIM Integration with Dynatrace using Dynatrace One Agent
 
 ## API Management Version Compatibility
 
-This artefact was successfully tested for the following versions:
-- V7.6.2 - use Branch apim-Aug-2022
-- V7.7 until APIM August 2022 release - use Branch apim-Aug-2022
-- V7.7 November 2022 release and above - use main Branch
+This artefact tested with following versions:
+
+- V7.7 November 2022 release and above
 
 ## Compile/Build
 
