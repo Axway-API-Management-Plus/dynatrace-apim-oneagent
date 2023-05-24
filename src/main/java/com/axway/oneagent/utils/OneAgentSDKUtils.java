@@ -60,7 +60,6 @@ public class OneAgentSDKUtils {
                     requestHeaders.remove(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME);
                 }
                 requestHeaders.setHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME, outgoingTag);
-                outgoingWebRequestTracer.addRequestHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME, outgoingTag);
             }
             addAttributes(message);
             object = pjp.proceed();
