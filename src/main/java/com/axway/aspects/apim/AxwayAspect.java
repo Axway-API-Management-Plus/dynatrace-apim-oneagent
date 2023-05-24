@@ -56,19 +56,19 @@ public class AxwayAspect {
         }
     }
 
-    @Pointcut("execution(* com.vordel.coreapireg.runtime.CoreApiBroker.invokeMethod(..)) && args (txn, m, lastChanceHandler, runMethod, resolvedMethod, matchCount, httpMethod, currentApiCallStatus)")
+    @Pointcut("execution(* com.vordel.coreapireg.runtime.CoreApiBroker.invokeMethod(..)) && args (txn, m, lastChanceHandler, runMethod, resolvedMethod, matchCount, httpMethod, apiPrefix, currentApiCallStatus)")
     public void invokeMethodPointcut(ServerTransaction txn, Message m,
                                      MessageProcessor lastChanceHandler, InvokableMethod runMethod,
                                      final PathResolverResult resolvedMethod, final int matchCount,
-                                     String httpMethod, ApiShunt currentApiCallStatus) {
+                                     String httpMethod, String apiPrefix, ApiShunt currentApiCallStatus) {
 
     }
 
-    @Around("invokeMethodPointcut(txn, m, lastChanceHandler, runMethod, resolvedMethod, matchCount, httpMethod, currentApiCallStatus)")
+    @Around("invokeMethodPointcut(txn, m, lastChanceHandler, runMethod, resolvedMethod, matchCount, httpMethod, apiPrefix, currentApiCallStatus)")
     public Object invokeMethodAroundAdvice(ProceedingJoinPoint pjp, ServerTransaction txn, Message m,
                                            MessageProcessor lastChanceHandler, InvokableMethod runMethod,
                                            final PathResolverResult resolvedMethod, final int matchCount,
-                                           String httpMethod, ApiShunt currentApiCallStatus) {
+                                           String httpMethod, String apiPrefix, ApiShunt currentApiCallStatus) {
         String[] uriSplit = OneAgentSDKUtils.getRequestURL(m).split("/");
         String apiName;
         String apiContextRoot = "/";
