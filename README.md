@@ -6,7 +6,9 @@ Axway APIM Integration with Dynatrace using Dynatrace One Agent
 
 This artefact tested with following versions:
 
-- V7.7 November 2022 release and above
+- V7.7 November 2022 release and above use main brach
+- V7.7 November 2021 release use Nov2021 branch
+
 
 ## Compile/Build
 
