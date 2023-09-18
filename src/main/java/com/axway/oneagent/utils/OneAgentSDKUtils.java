@@ -40,9 +40,9 @@ public class OneAgentSDKUtils {
         }
     }
 
-    public static Object aroundProducer(ProceedingJoinPoint pjp, Message message, Circuit circuit, HeaderSet requestHeaders, String httpVerb) {
+    public static Object aroundProducer(ProceedingJoinPoint pjp, Message message, Circuit circuit, HeaderSet requestHeaders, String httpVerb) throws Throwable {
         Trace.debug("Dynatrace :: Starting around producer for Policy " + circuit.getName());
-        Object object = null;
+        Object object;
         String requestUrl = getRequestURL(message);
         Trace.debug("Request url :" + requestUrl + " httpVerb " + httpVerb);
         OutgoingWebRequestTracer outgoingWebRequestTracer = oneAgentSdk.traceOutgoingWebRequest(requestUrl, httpVerb);
@@ -72,15 +72,16 @@ public class OneAgentSDKUtils {
             Trace.error("Dynatrace :: around producer ", e);
             outgoingWebRequestTracer.setStatusCode(500);
             outgoingWebRequestTracer.error(e);
+            throw e;
         } finally {
             outgoingWebRequestTracer.end();
         }
         return object;
     }
 
-    public static Object aroundConsumer(ProceedingJoinPoint pjp, Message message, String apiName, String apiContextRoot, ServerTransaction txn) {
+    public static Object aroundConsumer(ProceedingJoinPoint pjp, Message message, String apiName, String apiContextRoot, ServerTransaction txn) throws Throwable {
         Trace.debug("Dynatrace :: Starting around consumer");
-        Object pjpProceed = null;
+        Object pjpProceed;
         WebApplicationInfo wsInfo = oneAgentSdk.createWebApplicationInfo("Axway Gateway", apiName, apiContextRoot);
         HeaderSet headers = null;
         String correlationId = null;
@@ -129,16 +130,18 @@ public class OneAgentSDKUtils {
         } catch (Throwable e) {
             Trace.error("Dynatrace :: around consumer", e);
             tracer.error(e);
+            throw e;
+        }finally {
+            if( message != null) {
+                String appName = (String) message.getOrDefault("authentication.application.name", DEFAULT);
+                String orgName = (String) message.getOrDefault("authentication.organization.name", DEFAULT);
+                String appId = (String) message.getOrDefault("authentication.subject.id", DEFAULT);
+                addRequestAttributes(appName, orgName, appId, message.getIDBase());
+            }
+            tracer.setStatusCode(getHTTPStatusCode(message));
+            tracer.end();
+            Trace.debug("Dynatrace :: Ending around consumer");
         }
-        if( message != null) {
-            String appName = (String) message.getOrDefault("authentication.application.name", DEFAULT);
-            String orgName = (String) message.getOrDefault("authentication.organization.name", DEFAULT);
-            String appId = (String) message.getOrDefault("authentication.subject.id", DEFAULT);
-            addRequestAttributes(appName, orgName, appId, message.getIDBase());
-        }
-        tracer.setStatusCode(getHTTPStatusCode(message));
-        tracer.end();
-        Trace.debug("Dynatrace :: Ending around consumer");
         return pjpProceed;
     }
 
