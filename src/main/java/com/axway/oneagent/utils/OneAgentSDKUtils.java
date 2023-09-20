@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
 public class OneAgentSDKUtils {
     private static final OneAgentSDK oneAgentSdk = OneAgentSDKFactory.createInstance();
     private static final String DEFAULT = "default";
+    public static final String AXWAY_CORRELATION_ID = "AxwayCorrelationId";
+    public static final String HTTP_HEADERS = "http.headers";
 
     static {
         oneAgentSdk.setLoggingCallback(new TraceLoggingCallback());
@@ -40,9 +42,9 @@ public class OneAgentSDKUtils {
         }
     }
 
-    public static Object aroundProducer(ProceedingJoinPoint pjp, Message message, Circuit circuit, HeaderSet requestHeaders, String httpVerb) {
+    public static Object aroundProducer(ProceedingJoinPoint pjp, Message message, Circuit circuit, HeaderSet requestHeaders, String httpVerb) throws Throwable {
         Trace.debug("Dynatrace :: Starting around producer for Policy " + circuit.getName());
-        Object object = null;
+        Object object;
         String requestUrl = getRequestURL(message);
         Trace.debug("Request url :" + requestUrl + " httpVerb " + httpVerb);
         OutgoingWebRequestTracer outgoingWebRequestTracer = oneAgentSdk.traceOutgoingWebRequest(requestUrl, httpVerb);
@@ -63,7 +65,7 @@ public class OneAgentSDKUtils {
             }
             addAttributes(message);
             object = pjp.proceed();
-            HeaderSet responseHeaders = (HeaderSet) message.get("http.headers");
+            HeaderSet responseHeaders = (HeaderSet) message.get(HTTP_HEADERS);
             addOutgoingResponseHeaders(outgoingWebRequestTracer, responseHeaders);
             int httpStatusCode = getHTTPStatusCode(message);
             outgoingWebRequestTracer.setStatusCode(httpStatusCode);
@@ -72,20 +74,21 @@ public class OneAgentSDKUtils {
             Trace.error("Dynatrace :: around producer ", e);
             outgoingWebRequestTracer.setStatusCode(500);
             outgoingWebRequestTracer.error(e);
+            throw e;
         } finally {
             outgoingWebRequestTracer.end();
         }
         return object;
     }
 
-    public static Object aroundConsumer(ProceedingJoinPoint pjp, Message message, String apiName, String apiContextRoot, ServerTransaction txn) {
+    public static Object aroundConsumer(ProceedingJoinPoint pjp, Message message, String apiName, String apiContextRoot, ServerTransaction txn) throws Throwable{
         Trace.debug("Dynatrace :: Starting around consumer");
         Object pjpProceed = null;
         WebApplicationInfo wsInfo = oneAgentSdk.createWebApplicationInfo("Axway Gateway", apiName, apiContextRoot);
         HeaderSet headers = null;
         String correlationId = null;
         if (message != null) {
-            headers = (HeaderSet) message.get("http.headers");
+            headers = (HeaderSet) message.get(HTTP_HEADERS);
             correlationId = message.getIDBase().toString();
         } else if (txn != null) {
             headers = txn.getHeaders();
@@ -99,46 +102,48 @@ public class OneAgentSDKUtils {
             addIncomingHeaders(tracer, headers);
             tracer.start();
             if (correlationId != null)
-                oneAgentSdk.addCustomRequestAttribute("AxwayCorrelationId", "Id-" + correlationId);
+                oneAgentSdk.addCustomRequestAttribute(AXWAY_CORRELATION_ID, "Id-" + correlationId);
             if (!receivedTag.startsWith("FW")) {
-                int NA_index = receivedTag.indexOf("NA=");
-                int SN_index = receivedTag.indexOf("SN=");
-                int SI_index = receivedTag.indexOf("SI=");
-                if (NA_index != -1 && SN_index != -1 && SI_index != -1) {
-                    String afterNA = receivedTag.substring(NA_index);
+                int naIndex = receivedTag.indexOf("NA=");
+                int snIndex = receivedTag.indexOf("SN=");
+                int siIndex = receivedTag.indexOf("SI=");
+                if (naIndex != -1 && snIndex != -1 && siIndex != -1) {
+                    String afterNA = receivedTag.substring(naIndex);
                     int delimiter_index = afterNA.indexOf(';');
-                    String NeoLoad_Transaction = receivedTag.substring(NA_index + 3, NA_index + delimiter_index);
-                    NeoLoad_Transaction(NeoLoad_Transaction);
-                    String afterSN = receivedTag.substring(SN_index);
+                    String neoloadTransaction = receivedTag.substring(naIndex + 3, naIndex + delimiter_index);
+                    neoLoadTransaction(neoloadTransaction);
+                    String afterSN = receivedTag.substring(snIndex);
                     delimiter_index = afterSN.indexOf(';');
-                    String NeoLoad_UserPath = receivedTag.substring(SN_index + 3, SN_index + delimiter_index);
-                    NeoLoad_UserPath(NeoLoad_UserPath);
-                    String afterSI = receivedTag.substring(SI_index);
+                    String neoloadUserPath = receivedTag.substring(snIndex + 3, snIndex + delimiter_index);
+                    neoLoadUserPath(neoloadUserPath);
+                    String afterSI = receivedTag.substring(siIndex);
                     delimiter_index = afterSI.indexOf(';');
-                    String Neoload_Traffic = receivedTag.substring(SI_index + 3, SI_index + delimiter_index);
-                    Neoload_Traffic(Neoload_Traffic);
+                    String neoloadTraffic = receivedTag.substring(siIndex + 3, siIndex + delimiter_index);
+                    neoloadTraffic(neoloadTraffic);
                 }
             }
         } else {
             addIncomingHeaders(tracer, headers);
             tracer.start();
-            oneAgentSdk.addCustomRequestAttribute("AxwayCorrelationId", "Id-" + correlationId);
+            oneAgentSdk.addCustomRequestAttribute(AXWAY_CORRELATION_ID, "Id-" + correlationId);
         }
         try {
             pjpProceed = pjp.proceed();
         } catch (Throwable e) {
             Trace.error("Dynatrace :: around consumer", e);
             tracer.error(e);
+            throw e;
+        }finally {
+            if (message != null) {
+                String appName = (String) message.getOrDefault("authentication.application.name", DEFAULT);
+                String orgName = (String) message.getOrDefault("authentication.organization.name", DEFAULT);
+                String appId = (String) message.getOrDefault("authentication.subject.id", DEFAULT);
+                addRequestAttributes(appName, orgName, appId, message.getIDBase());
+            }
+            tracer.setStatusCode(getHTTPStatusCode(message));
+            tracer.end();
+            Trace.debug("Dynatrace :: Ending around consumer");
         }
-        if( message != null) {
-            String appName = (String) message.getOrDefault("authentication.application.name", DEFAULT);
-            String orgName = (String) message.getOrDefault("authentication.organization.name", DEFAULT);
-            String appId = (String) message.getOrDefault("authentication.subject.id", DEFAULT);
-            addRequestAttributes(appName, orgName, appId, message.getIDBase());
-        }
-        tracer.setStatusCode(getHTTPStatusCode(message));
-        tracer.end();
-        Trace.debug("Dynatrace :: Ending around consumer");
         return pjpProceed;
     }
 
@@ -156,7 +161,7 @@ public class OneAgentSDKUtils {
 
 
     public static String readHostNameFromHttpHeader(Message message) {
-        HeaderSet httpHeaders = (HeaderSet) message.get("http.headers");
+        HeaderSet httpHeaders = (HeaderSet) message.get(HTTP_HEADERS);
         if (httpHeaders == null)
             return "0.0.0.0";
         String host = (String) httpHeaders.get("Host");
@@ -174,15 +179,15 @@ public class OneAgentSDKUtils {
             addClientName(clientName);
     }
 
-    public static void NeoLoad_Transaction(String value) {
+    public static void neoLoadTransaction(String value) {
         oneAgentSdk.addCustomRequestAttribute("NeoLoad_Transaction", value);
     }
 
-    public static void NeoLoad_UserPath(String value) {
+    public static void neoLoadUserPath(String value) {
         oneAgentSdk.addCustomRequestAttribute("NeoLoad_UserPath", value);
     }
 
-    public static void Neoload_Traffic(String value) {
+    public static void neoloadTraffic(String value) {
         oneAgentSdk.addCustomRequestAttribute("Neoload_Traffic", value);
     }
 
@@ -245,7 +250,7 @@ public class OneAgentSDKUtils {
             map.put("AxwayAppId", appId);
         }
         if (correlationId != null) {
-            map.put("AxwayCorrelationId", "Id-" + correlationId);
+            map.put(AXWAY_CORRELATION_ID, "Id-" + correlationId);
         }
         Trace.info("Dynatrace :: Application Id :" + appId + " - Application Name : " + appName);
         addRequestAttributes(map);

@@ -34,7 +34,7 @@ public class AxwayAspect {
     }
 
     @Around("invokeConnectToUrl(c, m, headers, verb, body)")
-    public Object invokeConnectToUrlAroundAdvice(ProceedingJoinPoint pjp, Circuit c, Message m, HeaderSet headers, String verb, Body body) {
+    public Object invokeConnectToUrlAroundAdvice(ProceedingJoinPoint pjp, Circuit c, Message m, HeaderSet headers, String verb, Body body) throws Throwable {
         return OneAgentSDKUtils.aroundProducer(pjp, m, c, headers, verb);
     }
 
@@ -68,7 +68,7 @@ public class AxwayAspect {
     public Object invokeMethodAroundAdvice(ProceedingJoinPoint pjp, ServerTransaction txn, Message m,
                                            MessageProcessor lastChanceHandler, InvokableMethod runMethod,
                                            final PathResolverResult resolvedMethod, final int matchCount,
-                                           String httpMethod, ApiShunt currentApiCallStatus) {
+                                           String httpMethod, ApiShunt currentApiCallStatus) throws Throwable {
         String[] uriSplit = OneAgentSDKUtils.getRequestURL(m).split("/");
         String apiName;
         String apiContextRoot = "/";
