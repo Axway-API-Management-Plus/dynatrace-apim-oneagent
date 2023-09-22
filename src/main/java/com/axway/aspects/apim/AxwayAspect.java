@@ -32,17 +32,19 @@ public class AxwayAspect {
 
     /**
      * Captures policies exposed via Listener and API manager UI traffics, it does not capture servlet traffic like api manger REST API
-     * @param pjp pjp
-     * @param m m
+     *
+     * @param pjp               pjp
+     * @param m                 m
      * @param lastChanceHandler currentApiCallStatus
-     * @param context context
+     * @param context           context
      * @return context object
      * @throws Throwable
      */
     @Around("invokeGateway(m, lastChanceHandler, context)")
     public Object invokePointcutGateway(ProceedingJoinPoint pjp, Message m, MessageProcessor lastChanceHandler, Object context) throws Throwable {
         String[] uriSplit = ((String) m.get("http.request.path")).split("/");
-        String apiName = (String) m.getOrDefault("service.name", uriSplit[1]);
+        String alternateApiName = uriSplit.length == 0 ? "/" : uriSplit[1];
+        String apiName = (String) m.getOrDefault("service.name", alternateApiName);
         Trace.info("Service Name : " + apiName);
         String apiContextRoot = "/";
         apiContextRoot = (String) m.getOrDefault("api.path", apiContextRoot);
@@ -69,14 +71,15 @@ public class AxwayAspect {
 
     /**
      * Captures api manager traffic
-     * @param pjp pjp
-     * @param txn txt
-     * @param m message
-     * @param lastChanceHandler lastChanceHandler
-     * @param runMethod runMethod
-     * @param resolvedMethod resolvedMethod
-     * @param matchCount matchCount
-     * @param httpMethod httpMethod
+     *
+     * @param pjp                  pjp
+     * @param txn                  txt
+     * @param m                    message
+     * @param lastChanceHandler    lastChanceHandler
+     * @param runMethod            runMethod
+     * @param resolvedMethod       resolvedMethod
+     * @param matchCount           matchCount
+     * @param httpMethod           httpMethod
      * @param currentApiCallStatus currentApiCallStatus
      * @return pjp object
      * @throws Throwable
