@@ -41,7 +41,8 @@ public class AxwayAspect {
     @Around("invokeGateway(m, lastChanceHandler, context)")
     public Object invokePointcutGateway(ProceedingJoinPoint pjp, Message m, MessageProcessor lastChanceHandler, Object context) throws Throwable {
         String[] uriSplit = ((String) m.get("http.request.path")).split("/");
-        String apiName = (String) m.getOrDefault("service.name", uriSplit[1]);
+        String alternateApiName = uriSplit.length == 0 ? "/" : uriSplit[1];
+        String apiName = (String) m.getOrDefault("service.name", alternateApiName);
         Trace.info("Service Name : " + apiName);
         String apiContextRoot = "/";
         apiContextRoot = (String) m.getOrDefault("api.path", apiContextRoot);
