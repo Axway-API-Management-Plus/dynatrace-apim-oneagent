@@ -12,6 +12,7 @@ import com.vordel.mime.Body;
 import com.vordel.mime.HeaderSet;
 import com.vordel.trace.Trace;
 import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
@@ -38,15 +39,16 @@ public class AxwayAspect {
      * @return context object
      * @throws Throwable
      */
-    @Around("invokeGateway(m, lastChanceHandler, context)")
-    public Object invokePointcutGateway(ProceedingJoinPoint pjp, Message m, MessageProcessor lastChanceHandler, Object context) throws Throwable {
+    @After("invokeGateway(m, lastChanceHandler, context)")
+    public void invokePointcutGateway(ProceedingJoinPoint pjp, Message m, MessageProcessor lastChanceHandler, Object context) throws Throwable {
+        Trace.info(" message "+m.entrySet());
         String[] uriSplit = ((String) m.get("http.request.path")).split("/");
         String alternateApiName = uriSplit.length == 0 ? "/" : uriSplit[1];
         String apiName = (String) m.getOrDefault("service.name", alternateApiName);
         Trace.info("Service Name : " + apiName);
         String apiContextRoot = "/";
         apiContextRoot = (String) m.getOrDefault("api.path", apiContextRoot);
-        return OneAgentSDKUtils.aroundConsumer(pjp, m, apiName, apiContextRoot, null);
+        OneAgentSDKUtils.aroundConsumer(pjp, m, apiName, apiContextRoot, null, false);
     }
 
     @Pointcut("execution(* com.vordel.circuit.net.ConnectionProcessor.invoke(..)) && args (c, m, headers, verb, body)")
@@ -78,6 +80,6 @@ public class AxwayAspect {
         String apiContextRoot = "/";
         apiName = (String) m.getOrDefault("api.name", uriSplit[1]);
         apiContextRoot = (String) m.getOrDefault("api.path", apiContextRoot);
-        return OneAgentSDKUtils.aroundConsumer(pjp, m, apiName, apiContextRoot, txn);
+        return OneAgentSDKUtils.aroundConsumer(pjp, m, apiName, apiContextRoot, txn, true);
     }
 }

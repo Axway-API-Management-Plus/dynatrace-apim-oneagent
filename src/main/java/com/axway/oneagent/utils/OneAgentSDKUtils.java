@@ -79,9 +79,9 @@ public class OneAgentSDKUtils {
         return object;
     }
 
-    public static Object aroundConsumer(ProceedingJoinPoint pjp, Message message, String apiName, String apiContextRoot, ServerTransaction txn) throws Throwable {
+    public static Object aroundConsumer(ProceedingJoinPoint pjp, Message message, String apiName, String apiContextRoot, ServerTransaction txn, boolean proceed) throws Throwable {
         Trace.debug("Dynatrace :: Starting around consumer");
-        Object pjpProceed;
+        Object pjpProceed = null;
         WebApplicationInfo wsInfo = oneAgentSdk.createWebApplicationInfo("Axway Gateway", apiName, apiContextRoot);
         HeaderSet headers = null;
         String correlationId = null;
@@ -126,13 +126,14 @@ public class OneAgentSDKUtils {
             oneAgentSdk.addCustomRequestAttribute("AxwayCorrelationId", "Id-" + correlationId);
         }
         try {
-            pjpProceed = pjp.proceed();
+            if (proceed)
+                pjpProceed = pjp.proceed();
         } catch (Throwable e) {
             Trace.error("Dynatrace :: around consumer", e);
             tracer.error(e);
             throw e;
-        }finally {
-            if( message != null) {
+        } finally {
+            if (message != null) {
                 String appName = (String) message.getOrDefault("authentication.application.name", DEFAULT);
                 String orgName = (String) message.getOrDefault("authentication.organization.name", DEFAULT);
                 String appId = (String) message.getOrDefault("authentication.subject.id", DEFAULT);
