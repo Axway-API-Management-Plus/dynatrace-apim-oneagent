@@ -7,26 +7,37 @@ import com.vordel.config.Circuit;
 import com.vordel.coreapireg.runtime.PathResolverResult;
 import com.vordel.coreapireg.runtime.broker.ApiShunt;
 import com.vordel.coreapireg.runtime.broker.InvokableMethod;
-import com.vordel.dwe.CorrelationID;
-import com.vordel.dwe.http.HTTPProtocol;
 import com.vordel.dwe.http.ServerTransaction;
 import com.vordel.mime.Body;
 import com.vordel.mime.HeaderSet;
+import com.vordel.trace.Trace;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 
-import java.util.Map;
-
 @Aspect
 public class AxwayAspect {
 
-    public static final boolean isAPIManager = Boolean.parseBoolean(System.getProperty("apimanager", "true"));
 
     public AxwayAspect() {
     }
 
+
+    @Pointcut("execution(* com.vordel.circuit.SyntheticCircuitChainProcessor.invoke(..)) && args (m, lastChanceHandler, context)")
+    public void invokeGateway(Message m, MessageProcessor lastChanceHandler, Object context) {
+
+    }
+
+    @Around("invokeGateway(m, lastChanceHandler, context)")
+    public Object invokePointcutGateway(ProceedingJoinPoint pjp, Message m, MessageProcessor lastChanceHandler, Object context) throws Throwable {
+        String[] uriSplit = ((String) m.get("http.request.path")).split("/");
+        String apiName = (String) m.getOrDefault("service.name", uriSplit[1]);
+        Trace.info("Service Name : " + apiName);
+        String apiContextRoot = "/";
+        apiContextRoot = (String) m.getOrDefault("api.path", apiContextRoot);
+        return OneAgentSDKUtils.aroundConsumer(pjp, m, apiName, apiContextRoot, null);
+    }
 
     @Pointcut("execution(* com.vordel.circuit.net.ConnectionProcessor.invoke(..)) && args (c, m, headers, verb, body)")
     public void invokeConnectToUrl(Circuit c, Message m, HeaderSet headers, String verb, Body body) {
@@ -36,24 +47,6 @@ public class AxwayAspect {
     @Around("invokeConnectToUrl(c, m, headers, verb, body)")
     public Object invokeConnectToUrlAroundAdvice(ProceedingJoinPoint pjp, Circuit c, Message m, HeaderSet headers, String verb, Body body) throws Throwable {
         return OneAgentSDKUtils.aroundProducer(pjp, m, c, headers, verb);
-    }
-
-    @Pointcut("call(* com.vordel.dwe.http.HTTPPlugin.invokeDispose(..)) && args (protocol, handler, txn, id, loopbackMessage)")
-    public void invokeDisposePointcutGateway(HTTPProtocol protocol, HTTPProtocol handler, ServerTransaction txn, CorrelationID id, Map<String, Object> loopbackMessage) {
-
-    }
-
-    @Around("invokeDisposePointcutGateway(protocol, handler, txn, id, loopbackMessage)")
-    public void invokeDisposeAroundAdvice(ProceedingJoinPoint pjp, HTTPProtocol protocol, HTTPProtocol handler,
-                                          ServerTransaction txn, CorrelationID id, Map<String, Object> loopbackMessage) throws Throwable {
-        if (!isAPIManager) {
-            String[] uriSplit = txn.getRequestURI().split("/");
-            String apiName = uriSplit[1];
-            String apiContextRoot = "/";
-            OneAgentSDKUtils.aroundConsumer(pjp, null, apiName, apiContextRoot, txn);
-        } else {
-            pjp.proceed();
-        }
     }
 
     @Pointcut("execution(* com.vordel.coreapireg.runtime.CoreApiBroker.invokeMethod(..)) && args (txn, m, lastChanceHandler, runMethod, resolvedMethod, matchCount, httpMethod, currentApiCallStatus)")

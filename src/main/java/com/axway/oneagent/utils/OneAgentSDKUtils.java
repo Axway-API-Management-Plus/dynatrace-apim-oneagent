@@ -28,16 +28,16 @@ public class OneAgentSDKUtils {
         oneAgentSdk.setLoggingCallback(new TraceLoggingCallback());
         switch (oneAgentSdk.getCurrentState()) {
             case ACTIVE:
-                System.out.println("SDK is active and capturing.");
+                Trace.info("Dynatrace SDK is active and capturing.");
                 break;
             case PERMANENTLY_INACTIVE:
-                System.err.println("SDK is PERMANENTLY_INACTIVE; Probably no OneAgent injected or OneAgent is incompatible with SDK.");
+                Trace.error("Dynatrace SDK is PERMANENTLY_INACTIVE; Probably no OneAgent injected or OneAgent is incompatible with SDK.");
                 break;
             case TEMPORARILY_INACTIVE:
-                System.err.println("SDK is TEMPORARILY_INACTIVE; OneAgent has been deactivated - check OneAgent configuration.");
+                Trace.error("Dynatrace SDK is TEMPORARILY_INACTIVE; OneAgent has been deactivated - check OneAgent configuration.");
                 break;
             default:
-                System.err.println("SDK is in unknown state.");
+                Trace.error("Dynatrace SDK is in unknown state.");
                 break;
         }
     }
@@ -81,9 +81,9 @@ public class OneAgentSDKUtils {
         return object;
     }
 
-    public static Object aroundConsumer(ProceedingJoinPoint pjp, Message message, String apiName, String apiContextRoot, ServerTransaction txn) throws Throwable{
+    public static Object aroundConsumer(ProceedingJoinPoint pjp, Message message, String apiName, String apiContextRoot, ServerTransaction txn) throws Throwable {
         Trace.debug("Dynatrace :: Starting around consumer");
-        Object pjpProceed = null;
+        Object pjpProceed;
         WebApplicationInfo wsInfo = oneAgentSdk.createWebApplicationInfo("Axway Gateway", apiName, apiContextRoot);
         HeaderSet headers = null;
         String correlationId = null;
@@ -133,7 +133,7 @@ public class OneAgentSDKUtils {
             Trace.error("Dynatrace :: around consumer", e);
             tracer.error(e);
             throw e;
-        }finally {
+        } finally {
             if (message != null) {
                 String appName = (String) message.getOrDefault("authentication.application.name", DEFAULT);
                 String orgName = (String) message.getOrDefault("authentication.organization.name", DEFAULT);
