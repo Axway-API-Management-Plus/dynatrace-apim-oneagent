@@ -1,6 +1,7 @@
 package com.axway.aspects.apim;
 
 import com.axway.oneagent.utils.OneAgentSDKUtils;
+import com.vordel.circuit.InvocationContext;
 import com.vordel.circuit.Message;
 import com.vordel.circuit.MessageProcessor;
 import com.vordel.config.Circuit;
@@ -91,5 +92,20 @@ public class AxwayAspect {
         apiName = (String) m.getOrDefault("api.name", uriSplit[1]);
         apiContextRoot = (String) m.getOrDefault("api.path", apiContextRoot);
         return OneAgentSDKUtils.aroundConsumer(pjp, m, apiName, apiContextRoot, txn);
+    }
+
+
+    @Pointcut("execution(* com.vordel.coreapireg.runtime.CoreApiBroker.invokeFaultHandler(..)) && args (shuntReason, m, ctx)")
+    public void apiManagerFaultHandler(ApiShunt shuntReason, Message m, InvocationContext ctx) {
+
+    }
+
+    @Around("apiManagerFaultHandler(shuntReason, m, ctx)")
+    public Object handleApiManagerFaultHandler(ProceedingJoinPoint pjp, ApiShunt shuntReason, Message m, InvocationContext ctx) throws Throwable {
+        // Only handle API not found case
+        if (shuntReason.getStatusCode() == 404) {
+            return OneAgentSDKUtils.aroundConsumer(pjp, m, "NotFound", "/", null);
+        }
+        return pjp.proceed();
     }
 }
