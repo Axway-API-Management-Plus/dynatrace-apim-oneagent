@@ -23,8 +23,6 @@ public class AxwayAspect {
     public AxwayAspect() {
     }
 
-
-
     @Pointcut("execution(* com.vordel.circuit.SyntheticCircuitChainProcessor.invoke(..)) && args (m, lastChanceHandler, context)")
     public void invokeGateway(Message m, MessageProcessor lastChanceHandler, Object context) {
 
@@ -32,20 +30,19 @@ public class AxwayAspect {
 
     /**
      * Captures policies exposed via Listener and API manager UI traffics, it does not capture servlet traffic like api manger REST API
-     * @param pjp pjp
-     * @param m m
+     *
+     * @param pjp               pjp
+     * @param m                 m
      * @param lastChanceHandler currentApiCallStatus
-     * @param context context
-     * @return context object
+     * @param context           context
      * @throws Throwable
      */
     @After("invokeGateway(m, lastChanceHandler, context)")
     public void invokePointcutGateway(ProceedingJoinPoint pjp, Message m, MessageProcessor lastChanceHandler, Object context) throws Throwable {
-        Trace.info(" message "+m.entrySet());
         String[] uriSplit = ((String) m.get("http.request.path")).split("/");
         String alternateApiName = uriSplit.length == 0 ? "/" : uriSplit[1];
         String apiName = (String) m.getOrDefault("service.name", alternateApiName);
-        Trace.info("Service Name : " + apiName);
+        Trace.debug("Dynatrace :: Service Name : " + apiName);
         String apiContextRoot = "/";
         apiContextRoot = (String) m.getOrDefault("api.path", apiContextRoot);
         OneAgentSDKUtils.aroundConsumer(pjp, m, apiName, apiContextRoot, null, false);
@@ -74,7 +71,7 @@ public class AxwayAspect {
     public Object invokeMethodAroundAdvice(ProceedingJoinPoint pjp, ServerTransaction txn, Message m,
                                            MessageProcessor lastChanceHandler, InvokableMethod runMethod,
                                            final PathResolverResult resolvedMethod, final int matchCount,
-                                           String httpMethod, String apiPrefix, ApiShunt currentApiCallStatus) throws Throwable{
+                                           String httpMethod, String apiPrefix, ApiShunt currentApiCallStatus) throws Throwable {
         String[] uriSplit = OneAgentSDKUtils.getRequestURL(m).split("/");
         String apiName;
         String apiContextRoot = "/";
