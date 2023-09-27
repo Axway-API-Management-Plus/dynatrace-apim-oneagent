@@ -20,9 +20,6 @@ import org.aspectj.lang.annotation.Pointcut;
 @Aspect
 public class AxwayAspect {
 
-    public AxwayAspect() {
-    }
-
     @Pointcut("execution(* com.vordel.circuit.SyntheticCircuitChainProcessor.invoke(..)) && args (m, lastChanceHandler, context)")
     public void invokeGateway(Message m, MessageProcessor lastChanceHandler, Object context) {
 
@@ -31,21 +28,20 @@ public class AxwayAspect {
     /**
      * Captures policies exposed via Listener and API manager UI traffics, it does not capture servlet traffic like api manger REST API
      *
-     * @param pjp               pjp
      * @param m                 m
      * @param lastChanceHandler currentApiCallStatus
      * @param context           context
      * @throws Throwable
      */
     @After("invokeGateway(m, lastChanceHandler, context)")
-    public void invokePointcutGateway(ProceedingJoinPoint pjp, Message m, MessageProcessor lastChanceHandler, Object context) throws Throwable {
+    public void invokePointcutGateway(Message m, MessageProcessor lastChanceHandler, Object context) throws Throwable {
         String[] uriSplit = ((String) m.get("http.request.path")).split("/");
         String alternateApiName = uriSplit.length == 0 ? "/" : uriSplit[1];
         String apiName = (String) m.getOrDefault("service.name", alternateApiName);
         Trace.debug("Dynatrace :: Service Name : " + apiName);
         String apiContextRoot = "/";
         apiContextRoot = (String) m.getOrDefault("api.path", apiContextRoot);
-        OneAgentSDKUtils.aroundConsumer(pjp, m, apiName, apiContextRoot, null, false);
+        OneAgentSDKUtils.aroundConsumer(null, m, apiName, apiContextRoot, null);
     }
 
     @Pointcut("execution(* com.vordel.circuit.net.ConnectionProcessor.invoke(..)) && args (c, m, headers, verb, body)")
@@ -77,6 +73,6 @@ public class AxwayAspect {
         String apiContextRoot = "/";
         apiName = (String) m.getOrDefault("api.name", uriSplit[1]);
         apiContextRoot = (String) m.getOrDefault("api.path", apiContextRoot);
-        return OneAgentSDKUtils.aroundConsumer(pjp, m, apiName, apiContextRoot, txn, true);
+        return OneAgentSDKUtils.aroundConsumer(pjp, m, apiName, apiContextRoot, txn);
     }
 }

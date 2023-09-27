@@ -79,7 +79,7 @@ public class OneAgentSDKUtils {
         return object;
     }
 
-    public static Object aroundConsumer(ProceedingJoinPoint pjp, Message message, String apiName, String apiContextRoot, ServerTransaction txn, boolean proceed) throws Throwable {
+    public static Object aroundConsumer(ProceedingJoinPoint pjp, Message message, String apiName, String apiContextRoot, ServerTransaction txn) throws Throwable {
         Trace.debug("Dynatrace :: Starting around consumer");
         Object pjpProceed = null;
         WebApplicationInfo wsInfo = oneAgentSdk.createWebApplicationInfo("Axway Gateway", apiName, apiContextRoot);
@@ -126,7 +126,7 @@ public class OneAgentSDKUtils {
             oneAgentSdk.addCustomRequestAttribute("AxwayCorrelationId", "Id-" + correlationId);
         }
         try {
-            if (proceed)
+            if (pjp != null)
                 pjpProceed = pjp.proceed();
         } catch (Throwable e) {
             Trace.error("Dynatrace :: around consumer", e);
