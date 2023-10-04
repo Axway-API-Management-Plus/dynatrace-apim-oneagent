@@ -197,7 +197,7 @@ public class OneAgentSDKUtils {
     }
 
     public static String getRequestURL(Message message) {
-        return message.getOrDefault("http.request.uri", "(null)").toString();
+        return message.getOrDefault("http.request.uri", message.get("http.request.path")).toString();
     }
 
     public static int getHTTPStatusCode(Message message) {
