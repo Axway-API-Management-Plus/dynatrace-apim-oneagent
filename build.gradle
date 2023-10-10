@@ -5,7 +5,7 @@ plugins {
 }
 
 group 'com.axway'
-version '1.0.8'
+version '1.0.9'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_1_8
@@ -20,7 +20,7 @@ tasks.withType(JavaCompile) {
     options.compilerArgs += ['-Xlint:deprecation']
 }
 
-def apim_folder = '/opt/APIM-7.7.0/apigateway/system'
+def apim_folder = '/Users/rnatarajan/v7apim/may2023/system'
 
 
 dependencies {

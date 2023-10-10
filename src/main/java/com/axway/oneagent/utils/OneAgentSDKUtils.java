@@ -9,7 +9,6 @@ import com.dynatrace.oneagent.sdk.api.infos.WebApplicationInfo;
 import com.vordel.circuit.Message;
 import com.vordel.config.Circuit;
 import com.vordel.dwe.CorrelationID;
-import com.vordel.dwe.http.ServerTransaction;
 import com.vordel.mime.HeaderSet;
 import com.vordel.trace.Trace;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -81,20 +80,14 @@ public class OneAgentSDKUtils {
         return object;
     }
 
-    public static Object aroundConsumer(ProceedingJoinPoint pjp, Message message, String apiName, String apiContextRoot, ServerTransaction txn) throws Throwable {
+    public static Object aroundConsumer(ProceedingJoinPoint pjp, Message message, String apiName, String apiContextRoot) throws Throwable {
         Trace.debug("Dynatrace :: Starting around consumer");
-        Object pjpProceed = null;
+        Object pjpProceed;
         WebApplicationInfo wsInfo = oneAgentSdk.createWebApplicationInfo("Axway Gateway", apiName, apiContextRoot);
-        HeaderSet headers = null;
-        String correlationId = null;
-        if (message != null) {
-            headers = (HeaderSet) message.get(HTTP_HEADERS);
-            correlationId = message.getIDBase().toString();
-        } else if (txn != null) {
-            headers = txn.getHeaders();
-        }
+        HeaderSet headers = (HeaderSet) message.get(HTTP_HEADERS);
+        String correlationId = message.getIDBase().toString();
         Trace.debug("Dynatrace :: Consumer Headers before proceed: " + headers);
-        IncomingWebRequestTracer tracer = createIncomingWebRequestTracer(message, txn, wsInfo);
+        IncomingWebRequestTracer tracer = createIncomingWebRequestTracer(message, wsInfo);
         if (headers != null && headers.hasHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME)) {
             String receivedTag = headers.getHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME);
             Trace.debug("Dynatrace :: X-Dynatrace-Header " + receivedTag);
@@ -109,16 +102,16 @@ public class OneAgentSDKUtils {
                 int siIndex = receivedTag.indexOf("SI=");
                 if (naIndex != -1 && snIndex != -1 && siIndex != -1) {
                     String afterNA = receivedTag.substring(naIndex);
-                    int delimiter_index = afterNA.indexOf(';');
-                    String neoloadTransaction = receivedTag.substring(naIndex + 3, naIndex + delimiter_index);
+                    int delimiterIndex = afterNA.indexOf(';');
+                    String neoloadTransaction = receivedTag.substring(naIndex + 3, naIndex + delimiterIndex);
                     neoLoadTransaction(neoloadTransaction);
                     String afterSN = receivedTag.substring(snIndex);
-                    delimiter_index = afterSN.indexOf(';');
-                    String neoloadUserPath = receivedTag.substring(snIndex + 3, snIndex + delimiter_index);
+                    delimiterIndex = afterSN.indexOf(';');
+                    String neoloadUserPath = receivedTag.substring(snIndex + 3, snIndex + delimiterIndex);
                     neoLoadUserPath(neoloadUserPath);
                     String afterSI = receivedTag.substring(siIndex);
-                    delimiter_index = afterSI.indexOf(';');
-                    String neoloadTraffic = receivedTag.substring(siIndex + 3, siIndex + delimiter_index);
+                    delimiterIndex = afterSI.indexOf(';');
+                    String neoloadTraffic = receivedTag.substring(siIndex + 3, siIndex + delimiterIndex);
                     neoloadTraffic(neoloadTraffic);
                 }
             }
@@ -128,19 +121,16 @@ public class OneAgentSDKUtils {
             oneAgentSdk.addCustomRequestAttribute(AXWAY_CORRELATION_ID, "Id-" + correlationId);
         }
         try {
-            if (pjp != null)
-                pjpProceed = pjp.proceed();
+            pjpProceed = pjp.proceed();
         } catch (Throwable e) {
             Trace.error("Dynatrace :: around consumer", e);
             tracer.error(e);
             throw e;
         } finally {
-            if (message != null) {
-                String appName = (String) message.getOrDefault("authentication.application.name", DEFAULT);
-                String orgName = (String) message.getOrDefault("authentication.organization.name", DEFAULT);
-                String appId = (String) message.getOrDefault("authentication.subject.id", DEFAULT);
-                addRequestAttributes(appName, orgName, appId, message.getIDBase());
-            }
+            String appName = (String) message.getOrDefault("authentication.application.name", DEFAULT);
+            String orgName = (String) message.getOrDefault("authentication.organization.name", DEFAULT);
+            String appId = (String) message.getOrDefault("authentication.subject.id", DEFAULT);
+            addRequestAttributes(appName, orgName, appId, message.getIDBase());
             tracer.setStatusCode(getHTTPStatusCode(message));
             tracer.end();
             Trace.debug("Dynatrace :: Ending around consumer");
@@ -148,16 +138,9 @@ public class OneAgentSDKUtils {
         return pjpProceed;
     }
 
-    private static IncomingWebRequestTracer createIncomingWebRequestTracer(Message m, ServerTransaction txn, WebApplicationInfo wsInfo) {
-        IncomingWebRequestTracer tracer = null;
-        if (m != null) {
-            String httpURL = "https://" + readHostNameFromHttpHeader(m) + m.get("http.request.uri").toString();
-            tracer = oneAgentSdk.traceIncomingWebRequest(wsInfo, httpURL, m.get("http.request.verb").toString());
-        } else if (txn != null) {
-            String httpURL = "https://" + txn.getHost() + txn.getRequestURI();
-            tracer = oneAgentSdk.traceIncomingWebRequest(wsInfo, httpURL, txn.getMethod());
-        }
-        return tracer;
+    private static IncomingWebRequestTracer createIncomingWebRequestTracer(Message m, WebApplicationInfo wsInfo) {
+        String httpURL = "https://" + readHostNameFromHttpHeader(m) + m.get("http.request.uri").toString();
+        return oneAgentSdk.traceIncomingWebRequest(wsInfo, httpURL, m.get("http.request.verb").toString());
     }
 
 

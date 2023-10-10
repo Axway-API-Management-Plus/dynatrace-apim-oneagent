@@ -14,7 +14,6 @@ import com.vordel.mime.HeaderSet;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
 
 @Aspect
@@ -22,7 +21,6 @@ public class AxwayAspect {
 
     @Pointcut("execution(* com.vordel.circuit.SyntheticCircuitChainProcessor.invoke(..)) && args (m, lastChanceHandler, context)")
     public void invokeGateway(Message m, MessageProcessor lastChanceHandler, Object context) {
-
     }
 
     /**
@@ -34,17 +32,16 @@ public class AxwayAspect {
      * @return context object
      * @throws Throwable
      */
-    @Before("invokeGateway(m, lastChanceHandler, context)")
-    public void invokePointcutGateway(Message m, MessageProcessor lastChanceHandler, Object context) throws Throwable {
+    @Around("invokeGateway(m, lastChanceHandler, context)")
+    public Object invokePointcutGateway(ProceedingJoinPoint pjp, Message m, MessageProcessor lastChanceHandler, Object context) throws Throwable {
         String requestPath = (String) m.get("http.request.path");
         String[] uriSplit = requestPath.split("/");
         String apiName = uriSplit.length == 0 ? "/" : uriSplit[1];
-        OneAgentSDKUtils.aroundConsumer(null, m, apiName, requestPath, null);
+        return OneAgentSDKUtils.aroundConsumer(pjp, m, apiName, requestPath);
     }
 
     @Pointcut("execution(* com.vordel.circuit.net.ConnectionProcessor.invoke(..)) && args (c, m, headers, verb, body)")
     public void invokeConnectToUrl(Circuit c, Message m, HeaderSet headers, String verb, Body body) {
-
     }
 
     @Around("invokeConnectToUrl(c, m, headers, verb, body)")
@@ -57,7 +54,6 @@ public class AxwayAspect {
                                      MessageProcessor lastChanceHandler, InvokableMethod runMethod,
                                      final PathResolverResult resolvedMethod, final int matchCount,
                                      String httpMethod, ApiShunt currentApiCallStatus) {
-
     }
 
     /**
@@ -85,20 +81,19 @@ public class AxwayAspect {
         String apiContextRoot = "/";
         apiName = (String) m.getOrDefault("api.name", uriSplit[1]);
         apiContextRoot = (String) m.getOrDefault("api.path", apiContextRoot);
-        return OneAgentSDKUtils.aroundConsumer(pjp, m, apiName, apiContextRoot, txn);
+        return OneAgentSDKUtils.aroundConsumer(pjp, m, apiName, apiContextRoot);
     }
 
 
     @Pointcut("execution(* com.vordel.coreapireg.runtime.CoreApiBroker.invokeFaultHandler(..)) && args (shuntReason, m, ctx)")
     public void apiManagerFaultHandler(ApiShunt shuntReason, Message m, InvocationContext ctx) {
-
     }
 
     @Around("apiManagerFaultHandler(shuntReason, m, ctx)")
     public Object handleApiManagerFaultHandler(ProceedingJoinPoint pjp, ApiShunt shuntReason, Message m, InvocationContext ctx) throws Throwable {
         // Only handle API not found case
         if (shuntReason.getStatusCode() == 404) {
-            return OneAgentSDKUtils.aroundConsumer(pjp, m, "NotFound", "/", null);
+            return OneAgentSDKUtils.aroundConsumer(pjp, m, "NotFound", "/");
         }
         return pjp.proceed();
     }
