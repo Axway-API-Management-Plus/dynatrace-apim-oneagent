@@ -138,6 +138,9 @@ public class OneAgentSDKUtils {
                 String orgName = (String) message.getOrDefault("authentication.organization.name", DEFAULT);
                 String appId = (String) message.getOrDefault("authentication.subject.id", DEFAULT);
                 addRequestAttributes(appName, orgName, appId, message.getIDBase());
+                String serviceName = (String) message.getOrDefault("service.name", DEFAULT);
+                if (serviceName != null)
+                    oneAgentSdk.addCustomRequestAttribute("ServiceName", serviceName);
             }
             tracer.setStatusCode(getHTTPStatusCode(message));
             tracer.end();
