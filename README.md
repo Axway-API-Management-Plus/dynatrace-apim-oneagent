@@ -51,7 +51,13 @@ gradlew clean jar
 
 ## Requests not captured in Dynatrace
 - API Manager REST API call.
-- Servlet defined in Policystudio. 
+- Servlet defined in Policystudio.
+
+# Dynatrace FAQ
+## Dynatrace is grouping services as volatile WebRequest
+- as on Axway SDK, we are dividing the services by URI, specifically on front-end axway servers, Dynatrace is grouping services as volatile webrequests.
+https://community.dynatrace.com/t5/Open-Q-A/volatile-WebRequest/td-p/180705
+to resolve this issue, increasing the bucket size of dynatrace managed environment via support ticket.
 
 
 ## Contributing
