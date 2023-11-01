@@ -23,7 +23,7 @@ gradlew clean jar
 
 ## Setup 
 
-- Copy dynatrace-aspectj-x.x.x.jar file to  apigateway/ext/lib and restart API Gateway instances
+- Copy dynatrace-aspectj-x.x.x.jar file to  apigateway/ext/lib
 - Copy Dynatrace one agent library - https://repo1.maven.org/maven2/com/dynatrace/oneagent/sdk/java/oneagent-sdk/1.8.0/oneagent-sdk-1.8.0.jar to  apigateway/ext/lib
 - Copy Aspectj weaver - https://repo1.maven.org/maven2/org/aspectj/aspectjweaver/1.9.6/aspectjweaver-1.9.6.jar to  apigateway/ext/lib
 - Restart API Gateway instances
