@@ -26,13 +26,13 @@ gradlew clean jar
 - Copy dynatrace-aspectj-x.x.x.jar file to  apigateway/ext/lib
 - Copy Dynatrace one agent library - https://repo1.maven.org/maven2/com/dynatrace/oneagent/sdk/java/oneagent-sdk/1.8.0/oneagent-sdk-1.8.0.jar to  apigateway/ext/lib
 - Copy Aspectj weaver - https://repo1.maven.org/maven2/org/aspectj/aspectjweaver/1.9.6/aspectjweaver-1.9.6.jar to  apigateway/ext/lib
-- Restart API Gateway instances
 - Create a file named jvm.xml under APIGATEWAY_INSTALL_DIR/apigateway/conf/
     ```xml
     <ConfigurationFragment>
         <VMArg name="-javaagent:/home/axway/Axway-7.7.0-Aug2021/apigateway/ext/lib/aspectjweaver-1.9.6.jar"/>
     </ConfigurationFragment>
     ```
+- Restart API Gateway instances
 
 - Create Request Attributes in Dynatrace.
     - AxwayAppId
