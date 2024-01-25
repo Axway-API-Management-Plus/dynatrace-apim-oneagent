@@ -14,7 +14,7 @@ This artefact tested with following versions:
 
 In `build.gradle` file, update dependencies location:
 
-- Set the variable `apim_folder` to you API-Gateway installation folder (e.g. `opt/Axway/APIM/apigateway`)
+- Set the variable `apim_folder` to you API-Gateway installation folder (e.g. `opt/Axway/APIM/apigateway/system`)
 
 
 ```
