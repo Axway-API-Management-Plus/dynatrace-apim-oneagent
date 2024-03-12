@@ -23,16 +23,16 @@ gradlew clean jar
 
 ## Setup 
 
-- Copy dynatrace-aspectj-x.x.x.jar file to  apigateway/ext/lib and restart API Gateway instances
+- Copy dynatrace-aspectj-x.x.x.jar file to  apigateway/ext/lib
 - Copy Dynatrace one agent library - https://repo1.maven.org/maven2/com/dynatrace/oneagent/sdk/java/oneagent-sdk/1.8.0/oneagent-sdk-1.8.0.jar to  apigateway/ext/lib
 - Copy Aspectj weaver - https://repo1.maven.org/maven2/org/aspectj/aspectjweaver/1.9.6/aspectjweaver-1.9.6.jar to  apigateway/ext/lib
-- Restart API Gateway instances
 - Create a file named jvm.xml under APIGATEWAY_INSTALL_DIR/apigateway/conf/
     ```xml
     <ConfigurationFragment>
         <VMArg name="-javaagent:/home/axway/Axway-7.7.0-Aug2021/apigateway/ext/lib/aspectjweaver-1.9.6.jar"/>
     </ConfigurationFragment>
     ```
+- Restart API Gateway instances
 
 - Create Request Attributes in Dynatrace.
     - AxwayAppId
@@ -51,7 +51,13 @@ gradlew clean jar
 
 ## Requests not captured in Dynatrace
 - API Manager REST API call.
-- Servlet defined in Policystudio. 
+- Servlet defined in Policystudio.
+
+# Dynatrace FAQ
+## Dynatrace is grouping services as volatile WebRequest
+- as on Axway SDK, we are dividing the services by URI, specifically on front-end axway servers, Dynatrace is grouping services as volatile webrequests.
+https://community.dynatrace.com/t5/Open-Q-A/volatile-WebRequest/td-p/180705
+to resolve this issue, increasing the bucket size of dynatrace managed environment via support ticket.
 
 
 ## Contributing
