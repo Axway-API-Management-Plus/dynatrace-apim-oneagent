@@ -151,7 +151,7 @@ public class OneAgentSDKUtils {
         HeaderSet httpHeaders = (HeaderSet) message.get(HTTP_HEADERS);
         if (httpHeaders == null)
             return "0.0.0.0";
-        String host = (String) httpHeaders.get("Host");
+        String host = httpHeaders.getHeader("Host");
         if (host == null)
             return "0.0.0.0";
         if (host.contains(":")) {
