@@ -7,6 +7,7 @@ import com.dynatrace.oneagent.sdk.api.OneAgentSDK;
 import com.dynatrace.oneagent.sdk.api.OutgoingWebRequestTracer;
 import com.dynatrace.oneagent.sdk.api.infos.WebApplicationInfo;
 import com.vordel.circuit.Message;
+import com.vordel.circuit.MessageProperties;
 import com.vordel.config.Circuit;
 import com.vordel.dwe.CorrelationID;
 import com.vordel.mime.HeaderSet;
@@ -134,6 +135,10 @@ public class OneAgentSDKUtils {
             if (serviceName != null)
                 oneAgentSdk.addCustomRequestAttribute("ServiceName", serviceName);
             addRequestAttributes(appName, orgName, appId, message.getIDBase());
+            if (message.get(MessageProperties.RESTAPI_ERROR_REASON) != null) {
+                oneAgentSdk.addCustomRequestAttribute("RestApiErrorReason", (String) message.getOrDefault(MessageProperties.RESTAPI_ERROR_REASON, ""));
+                oneAgentSdk.addCustomRequestAttribute("RestApiErrorSource", (String) message.getOrDefault(MessageProperties.RESTAPI_ERROR_SOURCE, ""));
+            }
             tracer.setStatusCode(getHTTPStatusCode(message));
             tracer.end();
             Trace.debug("Dynatrace :: Ending around consumer");
@@ -188,8 +193,8 @@ public class OneAgentSDKUtils {
 
     public static int getHTTPStatusCode(Message message) {
         if (message == null)
-            return 0;
-        return (int) message.getOrDefault("http.response.status", 0);
+            return 500;
+        return (int) message.getOrDefault("http.response.status", 500);
     }
 
     public static void addIncomingHeaders(IncomingWebRequestTracer tracer, HeaderSet headers) {
@@ -239,7 +244,7 @@ public class OneAgentSDKUtils {
         if (correlationId != null) {
             map.put(AXWAY_CORRELATION_ID, "Id-" + correlationId);
         }
-        Trace.info("Dynatrace :: Application Id :" + appId + " - Application Name : " + appName);
+        Trace.debug("Dynatrace :: Application Id :" + appId + " - Application Name : " + appName);
         addRequestAttributes(map);
     }
 
