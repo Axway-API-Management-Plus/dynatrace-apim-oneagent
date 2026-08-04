@@ -8,35 +8,46 @@ import com.vordel.trace.Trace;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.core.classloader.annotations.SuppressStaticInitializationFor;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.util.Map;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({Trace.class, CorrelationID.class})
-@SuppressStaticInitializationFor({"com.vordel.trace.Trace", "com.vordel.dwe.CorrelationID"})
+@PrepareForTest({Trace.class, CorrelationID.class, OneAgentSDKUtils.class})
+@SuppressStaticInitializationFor({
+    "com.vordel.trace.Trace",
+    "com.vordel.dwe.CorrelationID",
+    "com.vordel.mime.Body",
+    "com.vordel.circuit.Message",
+    "com.vordel.circuit.format.MessagePropertiesBodyFormatter",
+    "com.vordel.circuit.format.MessagePropertiesFormatterRegistration",
+    "com.axway.oneagent.utils.OneAgentSDKUtils"
+})
+
 public class OneAgentSDKUtilsTest {
 
 
     @Test
     public void readHostNameFromHttpHeader() {
-        Message message = new Message(PowerMockito.mock(CorrelationID.class), null);
+        Message message = mock(Message.class);
         HeaderSet headerSet = new HeaderSet();
-        message.put("http.headers", headerSet);
         headerSet.addHeader("Host", "10.129.61.129:8075");
+        when(message.get("http.headers")).thenReturn(headerSet);
         String host = OneAgentSDKUtils.readHostNameFromHttpHeader(message);
         Assert.assertEquals("10.129.61.129", host);
     }
 
     @Test
     public void readHostNameFromHttpHeaderWithoutPort() {
-        Message message = new Message(PowerMockito.mock(CorrelationID.class), null);
+        Message message = mock(Message.class);
         HeaderSet headerSet = new HeaderSet();
-        message.put("http.headers", headerSet);
         headerSet.addHeader("Host", "10.129.61.129");
+        when(message.get("http.headers")).thenReturn(headerSet);
         String host = OneAgentSDKUtils.readHostNameFromHttpHeader(message);
         Assert.assertEquals("10.129.61.129", host);
     }
@@ -64,25 +75,36 @@ public class OneAgentSDKUtilsTest {
 
     @Test
     public void testDuplicateHeaderRemoval() {
-
         HeaderSet headerSet = new HeaderSet();
         headerSet.addHeader("Host", "10.129.61.129");
         headerSet.addHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME, "FW123");
-        if(headerSet.containsKey(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME)) {
+        if (headerSet.containsKey(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME)) {
             headerSet.remove(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME);
         }
         headerSet.addHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME, "FW12356");
-        System.out.println(headerSet);
-        Assert.assertEquals(headerSet.getHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME), "FW12356");
+        Assert.assertEquals("FW12356", headerSet.getHeader(OneAgentSDK.DYNATRACE_HTTP_HEADERNAME));
     }
 
     @Test
-    public void testResponseCode(){
-        Message message = new Message(PowerMockito.mock(CorrelationID.class), null);
-        message.put("http.response.status", 200);
-        Assert.assertEquals(OneAgentSDKUtils.getHTTPStatusCode(message), 200);
-        message.remove("http.response.status");
-        Assert.assertEquals(OneAgentSDKUtils.getHTTPStatusCode(message), 0);
+    public void testResponseCode() {
+        Message message = mock(Message.class);
+        when(message.getOrDefault("http.response.status", 500)).thenReturn(200);
+        Assert.assertEquals(200, OneAgentSDKUtils.getHTTPStatusCode(message));
+        when(message.getOrDefault("http.response.status", 500)).thenReturn(500);
+        Assert.assertEquals(500, OneAgentSDKUtils.getHTTPStatusCode(message));
+    }
+
+    @Test
+    public void checkURL() {
+        Message message = mock(Message.class);
+        java.net.URL url = null;
+        try {
+            url = new java.net.URL("http://localhost:8080/health");
+        } catch (Exception e) {
+            Assert.fail("Failed to create URL");
+        }
+        when(message.get("http.request.url")).thenReturn(url);
+        Assert.assertEquals("http://localhost:8080/health", OneAgentSDKUtils.getRequestURL(message));
     }
 
 }

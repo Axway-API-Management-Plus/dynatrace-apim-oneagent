@@ -14,6 +14,7 @@ import com.vordel.mime.HeaderSet;
 import com.vordel.trace.Trace;
 import org.aspectj.lang.ProceedingJoinPoint;
 
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -40,6 +41,9 @@ public class OneAgentSDKUtils {
                 Trace.error("Dynatrace SDK is in unknown state.");
                 break;
         }
+    }
+    private OneAgentSDKUtils() {
+        /* This utility class should not be instantiated */
     }
 
     public static Object aroundProducer(ProceedingJoinPoint pjp, Message message, Circuit circuit, HeaderSet requestHeaders, String httpVerb) throws Throwable {
@@ -187,14 +191,15 @@ public class OneAgentSDKUtils {
         oneAgentSdk.addCustomRequestAttribute("ClientName", clientName);
     }
 
-    public static String getRequestURL(Message message) {
-        return message.getOrDefault("http.request.uri", message.get("http.request.path")).toString();
-    }
 
     public static int getHTTPStatusCode(Message message) {
         if (message == null)
             return 500;
         return (int) message.getOrDefault("http.response.status", 500);
+    }
+
+    public static String getRequestURL(Message message) {
+        return  ((URL)message.get("http.request.url")).toExternalForm();
     }
 
     public static void addIncomingHeaders(IncomingWebRequestTracer tracer, HeaderSet headers) {

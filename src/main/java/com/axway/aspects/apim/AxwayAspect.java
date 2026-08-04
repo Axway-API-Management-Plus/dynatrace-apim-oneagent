@@ -13,6 +13,9 @@ import org.aspectj.lang.annotation.Pointcut;
 @Aspect
 public class AxwayAspect {
 
+    public static final boolean ISAPIMANAGER = Boolean.parseBoolean(System.getProperty("apimanager", "true"));
+
+
     @Pointcut("execution(* com.vordel.circuit.SyntheticCircuitChainProcessor.invoke(..)) && args (m, lastChanceHandler, context)")
     public void invokeGateway(Message m, MessageProcessor lastChanceHandler, Object context) {
     }
@@ -28,10 +31,14 @@ public class AxwayAspect {
      */
     @Around("invokeGateway(m, lastChanceHandler, context)")
     public Object invokePointcutGateway(ProceedingJoinPoint pjp, Message m, MessageProcessor lastChanceHandler, Object context) throws Throwable {
-        String requestPath = (String) m.get("http.request.path");
-        String[] uriSplit = requestPath.split("/");
-        String apiName = uriSplit.length == 0 ? "/" : uriSplit[1];
-        return OneAgentSDKUtils.aroundConsumer(pjp, m, apiName, requestPath);
+        if (!ISAPIMANAGER) {
+            String requestPath = (String) m.get("http.request.path");
+            String[] uriSplit = requestPath.split("/");
+            String apiName = uriSplit.length == 0 ? "/" : uriSplit[1];
+            return OneAgentSDKUtils.aroundConsumer(pjp, m, apiName, requestPath);
+        } else {
+            return pjp.proceed();
+        }
     }
 
     @Pointcut("execution(* com.vordel.circuit.net.ConnectionProcessor.invoke(..)) && args (c, m)")
@@ -40,8 +47,8 @@ public class AxwayAspect {
 
     @Around("invokeConnectToUrl(c, m)")
     public Object invokeConnectToUrlAroundAdvice(ProceedingJoinPoint pjp, Circuit c, Message m) throws Throwable {
-        HeaderSet headers = (HeaderSet)m.get("http.headers");
-        String verb = (String)m.get("http.request.verb");
+        HeaderSet headers = (HeaderSet) m.get("http.headers");
+        String verb = (String) m.get("http.request.verb");
         return OneAgentSDKUtils.aroundProducer(pjp, m, c, headers, verb);
     }
 
@@ -52,15 +59,15 @@ public class AxwayAspect {
     /**
      * Captures api manager traffic
      *
-     * @param circuit   circuit
-     * @param message   message
+     * @param circuit circuit
+     * @param message message
      * @return context object
      * @throws Throwable
      */
     @Around("invokeMethodPointcut(circuit, message)")
-    public Object invokeMethodAroundAdvice(ProceedingJoinPoint pjp, Circuit circuit, Message message) throws Throwable{
-
-        String[] uriSplit = OneAgentSDKUtils.getRequestURL(message).split("/");
+    public Object invokeMethodAroundAdvice(ProceedingJoinPoint pjp, Circuit circuit, Message message) throws Throwable {
+        String requestPath = (String) message.get("http.request.path");
+        String[] uriSplit = requestPath.split("/");
         String apiName;
         String apiContextRoot = "/";
         apiName = (String) message.getOrDefault("api.name", uriSplit[1]);
