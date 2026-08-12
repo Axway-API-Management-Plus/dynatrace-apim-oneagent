@@ -207,7 +207,7 @@ public class OneAgentSDKUtils {
         if (messageObject == null) {
             return "/";
         }
-        return (String) messageObject;
+        return messageObject.toString();
     }
 
     public static void addIncomingHeaders(IncomingWebRequestTracer tracer, HeaderSet headers) {
