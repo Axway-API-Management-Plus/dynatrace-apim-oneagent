@@ -4,6 +4,9 @@ import com.axway.oneagent.utils.OneAgentSDKUtils;
 import com.vordel.circuit.Message;
 import com.vordel.circuit.MessageProcessor;
 import com.vordel.config.Circuit;
+import com.vordel.coreapireg.runtime.PathResolverResult;
+import com.vordel.coreapireg.runtime.broker.ApiShunt;
+import com.vordel.coreapireg.runtime.broker.InvokableMethod;
 import com.vordel.mime.HeaderSet;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -35,11 +38,12 @@ public class AxwayAspect {
             String requestPath = (String) m.get("http.request.path");
             String[] uriSplit = requestPath.split("/");
             String apiName = uriSplit.length == 0 ? "/" : uriSplit[1];
-            return OneAgentSDKUtils.aroundConsumer(pjp, m, apiName, requestPath);
+            return OneAgentSDKUtils.aroundConsumer(pjp, m, apiName, "/");
         } else {
             return pjp.proceed();
         }
     }
+
 
     @Pointcut("execution(* com.vordel.circuit.net.ConnectionProcessor.invoke(..)) && args (c, m)")
     public void invokeConnectToUrl(Circuit c, Message m) {
@@ -52,28 +56,33 @@ public class AxwayAspect {
         return OneAgentSDKUtils.aroundProducer(pjp, m, c, headers, verb);
     }
 
-    @Pointcut("execution(* com.vordel.coreapireg.runtime.APIBroker.processRequest(..)) && args (circuit, message)")
-    public void invokeMethodPointcut(Circuit circuit, Message message) {
+    @Pointcut("execution(* com.vordel.coreapireg.runtime.APIBroker.invokeMethod(..)) && args (m,  runMethod, resolvedMethod,  currentApiCallStatus)")
+    public void invokeMethodPointcut(Message m, InvokableMethod runMethod,
+                                     PathResolverResult resolvedMethod,
+                                     ApiShunt currentApiCallStatus) {
     }
 
     /**
      * Captures api manager traffic
      *
-     * @param circuit circuit
-     * @param message message
-     * @return context object
+     * @param pjp                  pjp
+     * @param m                    message
+     * @param runMethod            runMethod
+     * @param resolvedMethod       resolvedMethod
+     * @param currentApiCallStatus currentApiCallStatus
+     * @return pjp object
      * @throws Throwable
      */
-    @Around("invokeMethodPointcut(circuit, message)")
-    public Object invokeMethodAroundAdvice(ProceedingJoinPoint pjp, Circuit circuit, Message message) throws Throwable {
-        String requestPath = (String) message.get("http.request.path");
-        String[] uriSplit = requestPath.split("/");
+    @Around("invokeMethodPointcut( m,  runMethod, resolvedMethod, currentApiCallStatus)")
+    public Object invokeMethodAroundAdvice(ProceedingJoinPoint pjp, Message m,
+                                           InvokableMethod runMethod,
+                                           PathResolverResult resolvedMethod, ApiShunt currentApiCallStatus) throws Throwable {
+        String[] uriSplit = OneAgentSDKUtils.getRequestURL(m).split("/");
         String apiName;
         String apiContextRoot = "/";
-        apiName = (String) message.getOrDefault("api.name", uriSplit[1]);
-        apiContextRoot = (String) message.getOrDefault("api.path", apiContextRoot);
-        return OneAgentSDKUtils.aroundConsumer(pjp, message, apiName, apiContextRoot);
-
+        apiName = (String) m.getOrDefault("api.name", uriSplit[1]);
+        apiContextRoot = (String) m.getOrDefault("api.path", apiContextRoot);
+        return OneAgentSDKUtils.aroundConsumer(pjp, m, apiName, apiContextRoot);
     }
 
 }

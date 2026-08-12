@@ -14,7 +14,6 @@ import com.vordel.mime.HeaderSet;
 import com.vordel.trace.Trace;
 import org.aspectj.lang.ProceedingJoinPoint;
 
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -42,6 +41,7 @@ public class OneAgentSDKUtils {
                 break;
         }
     }
+
     private OneAgentSDKUtils() {
         /* This utility class should not be instantiated */
     }
@@ -49,9 +49,7 @@ public class OneAgentSDKUtils {
     public static Object aroundProducer(ProceedingJoinPoint pjp, Message message, Circuit circuit, HeaderSet requestHeaders, String httpVerb) throws Throwable {
         Trace.debug("Dynatrace :: Starting around producer for Policy " + circuit.getName());
         Object object;
-        String requestUrl = getRequestURL(message);
-        Trace.debug("Request url :" + requestUrl + " httpVerb " + httpVerb);
-        OutgoingWebRequestTracer outgoingWebRequestTracer = oneAgentSdk.traceOutgoingWebRequest(requestUrl, httpVerb);
+        OutgoingWebRequestTracer outgoingWebRequestTracer = createOutgoingWebRequestTracer(message, httpVerb);
         try {
             String appName = (String) message.getOrDefault("authentication.application.name", DEFAULT);
             String orgName = (String) message.getOrDefault("authentication.organization.name", DEFAULT);
@@ -155,6 +153,11 @@ public class OneAgentSDKUtils {
         return oneAgentSdk.traceIncomingWebRequest(wsInfo, httpURL, m.get("http.request.verb").toString());
     }
 
+    private static OutgoingWebRequestTracer createOutgoingWebRequestTracer(Message m, String httpVerb) {
+        String httpURL = "https://" + readHostNameFromHttpHeader(m) + getRequestURL(m);
+        return oneAgentSdk.traceOutgoingWebRequest(httpURL, httpVerb);
+    }
+
 
     public static String readHostNameFromHttpHeader(Message message) {
         HeaderSet httpHeaders = (HeaderSet) message.get(HTTP_HEADERS);
@@ -198,8 +201,13 @@ public class OneAgentSDKUtils {
         return (int) message.getOrDefault("http.response.status", 500);
     }
 
+
     public static String getRequestURL(Message message) {
-        return  ((URL)message.get("http.request.url")).toExternalForm();
+        Object messageObject = message.get("http.request.uri");
+        if (messageObject == null) {
+            return "/";
+        }
+        return (String) messageObject;
     }
 
     public static void addIncomingHeaders(IncomingWebRequestTracer tracer, HeaderSet headers) {
