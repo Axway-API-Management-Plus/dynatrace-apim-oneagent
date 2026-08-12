@@ -12,6 +12,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.core.classloader.annotations.SuppressStaticInitializationFor;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+import java.net.URI;
 import java.util.Map;
 
 import static org.mockito.Mockito.mock;
@@ -97,8 +98,15 @@ public class OneAgentSDKUtilsTest {
     @Test
     public void checkURL() {
         Message message = mock(Message.class);
-
         Assert.assertEquals("/", OneAgentSDKUtils.getRequestURL(message));
+    }
+
+
+    @Test
+    public void checkURI() {
+        Message message = mock(Message.class);
+        when(message.get("http.request.uri")).thenReturn(URI.create("https://example.com/test"));
+        Assert.assertEquals("https://example.com/test", OneAgentSDKUtils.getRequestURL(message));
     }
 
 }
