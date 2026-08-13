@@ -4,9 +4,10 @@ Axway APIM Integration with Dynatrace using Dynatrace One Agent
 
 ## API Management Version Compatibility
 
-This artefact tested with following versions:
+This artifact tested with following versions:
 
-- V7.7 November 2022 release and above use main branch
+- V7.7 February 2026 release and above use main branch
+- V7.7 November 2022 release and above use Nov2022 branch
 - V7.7 November 2021 release use Nov2021 branch
 
 
@@ -52,6 +53,16 @@ gradlew clean jar
 ## Requests not captured in Dynatrace
 - API Manager REST API call.
 - Servlet defined in Policystudio.
+
+## API Gateway without API Manager
+
+Add additional configuration in jvm.xml file to capture requests from API Gateway without API Manager.
+
+```xml
+<ConfigurationFragment>
+    <VMArg name="-Dapimanager=false"/>
+</ConfigurationFragment>
+```
 
 # Dynatrace FAQ
 ## Dynatrace is grouping services as volatile WebRequest

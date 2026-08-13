@@ -7,6 +7,7 @@ import com.dynatrace.oneagent.sdk.api.OneAgentSDK;
 import com.dynatrace.oneagent.sdk.api.OutgoingWebRequestTracer;
 import com.dynatrace.oneagent.sdk.api.infos.WebApplicationInfo;
 import com.vordel.circuit.Message;
+import com.vordel.circuit.MessageProperties;
 import com.vordel.config.Circuit;
 import com.vordel.dwe.CorrelationID;
 import com.vordel.mime.HeaderSet;
@@ -41,12 +42,14 @@ public class OneAgentSDKUtils {
         }
     }
 
+    private OneAgentSDKUtils() {
+        /* This utility class should not be instantiated */
+    }
+
     public static Object aroundProducer(ProceedingJoinPoint pjp, Message message, Circuit circuit, HeaderSet requestHeaders, String httpVerb) throws Throwable {
         Trace.debug("Dynatrace :: Starting around producer for Policy " + circuit.getName());
         Object object;
-        String requestUrl = getRequestURL(message);
-        Trace.debug("Request url :" + requestUrl + " httpVerb " + httpVerb);
-        OutgoingWebRequestTracer outgoingWebRequestTracer = oneAgentSdk.traceOutgoingWebRequest(requestUrl, httpVerb);
+        OutgoingWebRequestTracer outgoingWebRequestTracer = createOutgoingWebRequestTracer(message, httpVerb);
         try {
             String appName = (String) message.getOrDefault("authentication.application.name", DEFAULT);
             String orgName = (String) message.getOrDefault("authentication.organization.name", DEFAULT);
@@ -127,13 +130,17 @@ public class OneAgentSDKUtils {
             tracer.error(e);
             throw e;
         } finally {
-            String appName = (String) message.getOrDefault("authentication.application.name", DEFAULT);
-            String orgName = (String) message.getOrDefault("authentication.organization.name", DEFAULT);
-            String appId = (String) message.getOrDefault("authentication.subject.id", DEFAULT);
-            String serviceName = (String) message.getOrDefault("service.name", DEFAULT);
+            String appName = getStringOrDefault(message, "authentication.application.name", DEFAULT);
+            String orgName = getStringOrDefault(message,"authentication.organization.name", DEFAULT);
+            String appId = getStringOrDefault(message, "authentication.subject.id", DEFAULT);
+            String serviceName = getStringOrDefault(message, "service.name", DEFAULT);
             if (serviceName != null)
                 oneAgentSdk.addCustomRequestAttribute("ServiceName", serviceName);
             addRequestAttributes(appName, orgName, appId, message.getIDBase());
+            if (message.get(MessageProperties.RESTAPI_ERROR_REASON) != null) {
+                oneAgentSdk.addCustomRequestAttribute("RestApiErrorReason", (String) message.get(MessageProperties.RESTAPI_ERROR_REASON));
+                oneAgentSdk.addCustomRequestAttribute("RestApiErrorSource", getStringOrDefault(message, MessageProperties.RESTAPI_ERROR_SOURCE, ""));
+            }
             tracer.setStatusCode(getHTTPStatusCode(message));
             tracer.end();
             Trace.debug("Dynatrace :: Ending around consumer");
@@ -144,6 +151,11 @@ public class OneAgentSDKUtils {
     private static IncomingWebRequestTracer createIncomingWebRequestTracer(Message m, WebApplicationInfo wsInfo) {
         String httpURL = "https://" + readHostNameFromHttpHeader(m) + m.get("http.request.uri").toString();
         return oneAgentSdk.traceIncomingWebRequest(wsInfo, httpURL, m.get("http.request.verb").toString());
+    }
+
+    private static OutgoingWebRequestTracer createOutgoingWebRequestTracer(Message m, String httpVerb) {
+        String httpURL = "https://" + readHostNameFromHttpHeader(m) + getRequestURL(m);
+        return oneAgentSdk.traceOutgoingWebRequest(httpURL, httpVerb);
     }
 
 
@@ -158,6 +170,13 @@ public class OneAgentSDKUtils {
             return host.split(":")[0];
         }
         return host;
+    }
+
+    public static String getStringOrDefault(Message message, String key, String defaultValue) {
+        Object value = message.get(key);
+        if (value == null)
+            return defaultValue;
+        return value.toString();
     }
 
     public static void addAttributes(Message message) {
@@ -182,14 +201,23 @@ public class OneAgentSDKUtils {
         oneAgentSdk.addCustomRequestAttribute("ClientName", clientName);
     }
 
-    public static String getRequestURL(Message message) {
-        return message.getOrDefault("http.request.uri", message.get("http.request.path")).toString();
-    }
 
     public static int getHTTPStatusCode(Message message) {
         if (message == null)
-            return 0;
-        return (int) message.getOrDefault("http.response.status", 0);
+            return 500;
+        Object status = message.get("http.response.status");
+        if (status == null)
+            return 500;
+        return (int) status;
+    }
+
+
+    public static String getRequestURL(Message message) {
+        Object messageObject = message.get("http.request.uri");
+        if (messageObject == null) {
+            return "/";
+        }
+        return messageObject.toString();
     }
 
     public static void addIncomingHeaders(IncomingWebRequestTracer tracer, HeaderSet headers) {
@@ -239,7 +267,7 @@ public class OneAgentSDKUtils {
         if (correlationId != null) {
             map.put(AXWAY_CORRELATION_ID, "Id-" + correlationId);
         }
-        Trace.info("Dynatrace :: Application Id :" + appId + " - Application Name : " + appName);
+        Trace.debug("Dynatrace :: Application Id :" + appId + " - Application Name : " + appName);
         addRequestAttributes(map);
     }
 
