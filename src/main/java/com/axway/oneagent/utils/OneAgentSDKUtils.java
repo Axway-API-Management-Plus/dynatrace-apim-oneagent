@@ -130,16 +130,16 @@ public class OneAgentSDKUtils {
             tracer.error(e);
             throw e;
         } finally {
-            String appName = (String) message.getOrDefault("authentication.application.name", DEFAULT);
-            String orgName = (String) message.getOrDefault("authentication.organization.name", DEFAULT);
-            String appId = (String) message.getOrDefault("authentication.subject.id", DEFAULT);
-            String serviceName = (String) message.getOrDefault("service.name", DEFAULT);
+            String appName = getStringOrDefault(message, "authentication.application.name", DEFAULT);
+            String orgName = getStringOrDefault(message,"authentication.organization.name", DEFAULT);
+            String appId = getStringOrDefault(message, "authentication.subject.id", DEFAULT);
+            String serviceName = getStringOrDefault(message, "service.name", DEFAULT);
             if (serviceName != null)
                 oneAgentSdk.addCustomRequestAttribute("ServiceName", serviceName);
             addRequestAttributes(appName, orgName, appId, message.getIDBase());
             if (message.get(MessageProperties.RESTAPI_ERROR_REASON) != null) {
-                oneAgentSdk.addCustomRequestAttribute("RestApiErrorReason", (String) message.getOrDefault(MessageProperties.RESTAPI_ERROR_REASON, ""));
-                oneAgentSdk.addCustomRequestAttribute("RestApiErrorSource", (String) message.getOrDefault(MessageProperties.RESTAPI_ERROR_SOURCE, ""));
+                oneAgentSdk.addCustomRequestAttribute("RestApiErrorReason", (String) message.get(MessageProperties.RESTAPI_ERROR_REASON));
+                oneAgentSdk.addCustomRequestAttribute("RestApiErrorSource", getStringOrDefault(message, MessageProperties.RESTAPI_ERROR_SOURCE, ""));
             }
             tracer.setStatusCode(getHTTPStatusCode(message));
             tracer.end();
@@ -172,6 +172,13 @@ public class OneAgentSDKUtils {
         return host;
     }
 
+    public static String getStringOrDefault(Message message, String key, String defaultValue) {
+        Object value = message.get(key);
+        if (value == null)
+            return defaultValue;
+        return value.toString();
+    }
+
     public static void addAttributes(Message message) {
         String clientName = (String) message.get("message.client.name");
         if (clientName != null)
@@ -198,7 +205,10 @@ public class OneAgentSDKUtils {
     public static int getHTTPStatusCode(Message message) {
         if (message == null)
             return 500;
-        return (int) message.getOrDefault("http.response.status", 500);
+        Object status = message.get("http.response.status");
+        if (status == null)
+            return 500;
+        return (int) status;
     }
 
 
