@@ -131,7 +131,7 @@ public class OneAgentSDKUtils {
             throw e;
         } finally {
             String appName = getStringOrDefault(message, "authentication.application.name", DEFAULT);
-            String orgName = getStringOrDefault(message,"authentication.organization.name", DEFAULT);
+            String orgName = getStringOrDefault(message, "authentication.organization.name", DEFAULT);
             String appId = getStringOrDefault(message, "authentication.subject.id", DEFAULT);
             String serviceName = getStringOrDefault(message, "service.name", DEFAULT);
             if (serviceName != null)
@@ -154,7 +154,7 @@ public class OneAgentSDKUtils {
     }
 
     private static OutgoingWebRequestTracer createOutgoingWebRequestTracer(Message m, String httpVerb) {
-        String httpURL = "https://" + readHostNameFromHttpHeader(m) + getRequestURL(m);
+        String httpURL = getRequestURL(m);
         return oneAgentSdk.traceOutgoingWebRequest(httpURL, httpVerb);
     }
 
@@ -214,8 +214,8 @@ public class OneAgentSDKUtils {
 
     public static String getRequestURL(Message message) {
         Object messageObject = message.get("http.request.uri");
-        if (messageObject == null) {
-            return "/";
+        if (messageObject == null || !messageObject.toString().startsWith("http")) {
+            return "https://" + readHostNameFromHttpHeader(message) + "/";
         }
         return messageObject.toString();
     }
