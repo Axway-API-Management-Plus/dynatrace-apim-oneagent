@@ -206,6 +206,9 @@ public class OneAgentSDKUtils {
         if (message == null)
             return 500;
         Object status = message.get("http.response.status");
+        Object verb = message.get("http.request.verb");
+        if (status == null && verb != null && verb.toString().equalsIgnoreCase("OPTIONS"))
+            return 200;
         if (status == null)
             return 500;
         return (int) status;
